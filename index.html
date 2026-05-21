@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LogiFlex DUA — Lógica Proposicional</title>
+  <title>Logic Tutor</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -18,6 +18,7 @@
       80%     { transform: translateX(4px); }
     }
     .shake { animation: shake 0.35s ease; }
+    #errorBadge { transition: transform 0.15s ease; }
   </style>
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col">
@@ -26,9 +27,8 @@
   <header class="bg-gradient-to-r from-[#3B1F6E] to-[#6B4FA0] text-white py-5 px-4 shadow-md">
     <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
       <div class="flex items-center gap-3">
-        <span class="text-3xl" aria-hidden="true">📐</span>
         <div>
-          <h1 class="text-2xl font-extrabold tracking-tight">LogiFlex DUA</h1>
+          <h1 class="text-2xl font-extrabold tracking-tight">🧠 Logic Tutor</h1>
           <p class="text-purple-200 text-xs">Aprendizaje Accesible de Lógica Proposicional</p>
         </div>
       </div>
@@ -41,7 +41,7 @@
 
   <!-- ── Barra de pestañas ──────────────────────────────────────────────── -->
   <div class="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
-    <div class="max-w-6xl mx-auto px-4 md:px-6 flex gap-1 py-2">
+    <div class="max-w-6xl mx-auto px-4 md:px-6 flex items-center gap-1 py-2">
       <button id="tabBtnTable"   onclick="switchTab('table')"
         class="px-5 py-2 rounded-lg text-sm font-bold transition-all bg-[#3B1F6E] text-white">
         📊 Tablas de Verdad
@@ -50,6 +50,12 @@
         class="px-5 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-[#3B1F6E] hover:bg-purple-50">
         🔗 Comparar Fórmulas
       </button>
+      <!-- Contador de errores (discreto) -->
+      <div id="errorBadge" class="ml-auto hidden items-center gap-1.5 px-3 py-1.5 bg-rose-50 border border-rose-200 rounded-full text-xs font-semibold text-rose-600" title="Intentos incorrectos en esta sesión">
+        <span aria-hidden="true">✗</span>
+        <span id="errorBadgeCount">0</span>
+        <span class="text-rose-400 font-normal">intentos incorrectos</span>
+      </div>
     </div>
   </div>
 
@@ -424,6 +430,7 @@
       activeColumns: [],
       tableValues: [],
       studentInput: {},
+      errorCount: 0,
     };
 
     const representationMapping = {
@@ -432,6 +439,20 @@
     };
 
     window.onload = function () { startActivity(); };
+
+
+    // ─── CONTADOR DE ERRORES ──────────────────────────────────────────────────
+    function registerError() {
+      appState.errorCount++;
+      const badge     = document.getElementById('errorBadge');
+      const badgeTxt  = document.getElementById('errorBadgeCount');
+      badgeTxt.textContent = appState.errorCount;
+      badge.classList.remove('hidden');
+      badge.classList.add('flex');
+      // Pequeña animación de "pulso" para notificar sin interrumpir
+      badge.classList.add('scale-110');
+      setTimeout(() => badge.classList.remove('scale-110'), 200);
+    }
 
 
     // ─── PESTAÑAS ─────────────────────────────────────────────────────────────
@@ -768,6 +789,7 @@
         fbHistory.innerHTML    = `🌟 <strong>¡Excelente!</strong> <code>${translateFormula(option.formula)}</code> está lista para calcularse.`;
         setTimeout(() => { addSubformulaToTable(option.formula); fbHistory.classList.add('hidden'); }, 1200);
       } else {
+        registerError();
         selectedBtn.className += ' border-rose-400 bg-rose-50/50 text-rose-900';
         fbHistory.className    = 'mt-4 p-4 rounded-xl text-sm font-semibold bg-rose-50 text-rose-800 border border-rose-200 block';
         const missing    = getMissingComponents(option.formula, appState.activeColumns);
@@ -1046,6 +1068,7 @@
         document.getElementById('sectionClassification').classList.remove('hidden');
         document.getElementById('sectionClassification').scrollIntoView({ behavior:'smooth' });
       } else {
+        registerError();
         fbTable.className = 'mt-4 p-4 rounded-xl text-center font-bold bg-rose-50 text-rose-800 border border-rose-200 block';
         fbTable.innerHTML = hasEmpty
           ? '⚠️ Tenés celdas vacías (amarillo). ¡Seleccioná V o F para completarlas!'
@@ -1078,6 +1101,7 @@
           `Has completado el análisis de <strong class="mono">${translateFormula(appState.formulaNormalized)}</strong>.<br><br>${expl}`;
         setTimeout(() => document.getElementById('congratsModal').classList.remove('hidden'), 800);
       } else {
+        registerError();
         fbClass.className = 'mt-4 p-4 rounded-xl text-center font-bold bg-rose-50 text-rose-800 border border-rose-200 block';
         fbClass.innerHTML = '❌ Esa no es la clasificación correcta. Mirá la última columna y volvé a intentarlo.';
       }
@@ -1275,6 +1299,7 @@
         else
           msg = `✅ ¡Correcto! No hay equivalencia ni implicancia en ninguna dirección.<br><span class="font-normal block mt-1">Contraej. α⟹β: con ${fmtRow(counterAB)}, α=V y β=F. &nbsp;|&nbsp; Contraej. β⟹α: con ${fmtRow(counterBA)}, β=V y α=F.</span>`;
       } else {
+        registerError();
         fb.className = 'mt-4 p-4 rounded-xl font-semibold text-sm bg-rose-50 text-rose-800 border border-rose-200 block';
         if (correct === 'equivalent')
           msg = `❌ Son <strong>equivalentes</strong> (α ≡ β): las columnas son idénticas en todas las filas.`;
