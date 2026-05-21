@@ -947,7 +947,7 @@
       const missing     = [];
       const mainOpIdx   = findMainOperator(f);
       if (mainOpIdx === -1) {
-        if (f.startsWith('~')) { const inner = f.slice(1); if (!activeList.includes(inner)) missing.push(inner); }
+        if (f.startsWith('~')) { const inner = cleanParentheses(f.slice(1)); if (!activeList.includes(inner)) missing.push(inner); }
       } else {
         const left  = cleanParentheses(f.slice(0, mainOpIdx));
         const right = cleanParentheses(f.slice(mainOpIdx + 1));
@@ -961,7 +961,7 @@
       f = cleanParentheses(f);
       const mainOpIdx = findMainOperator(f);
       if (mainOpIdx === -1) {
-        if (f.startsWith('~')) return activeList.includes(f.slice(1));
+        if (f.startsWith('~')) return activeList.includes(cleanParentheses(f.slice(1)));
         return false;
       }
       return activeList.includes(cleanParentheses(f.slice(0, mainOpIdx))) &&
@@ -1567,4 +1567,3 @@
 
 </body>
 </html>
-
