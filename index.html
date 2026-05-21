@@ -1006,8 +1006,8 @@
       headerRow.innerHTML = '';
       cols.forEach((col, idx) => {
         const th = document.createElement('th');
-        th.className = 'p-3 border border-slate-200 text-xs sm:text-sm tracking-wider font-extrabold text-slate-700' +
-          (idx === cols.length - 1 ? ' bg-purple-100 text-[#3B1F6E] border-b-2 border-purple-400' : '');
+        th.id        = `th_col_${idx}`;
+        th.className = 'p-3 border border-slate-200 text-xs sm:text-sm tracking-wider font-extrabold transition-colors';
         th.innerText = translateFormula(col);
         headerRow.appendChild(th);
       });
@@ -1030,7 +1030,8 @@
 
         cols.forEach((col, cIdx) => {
           const td = document.createElement('td');
-          td.className = 'p-2 border border-slate-200';
+          td.id        = `td_body_${r}_${cIdx}`;
+          td.className = 'p-2 border border-slate-200 transition-colors';
 
           if (vars.includes(col)) {
             const val = rowData[col];
@@ -1057,6 +1058,71 @@
       }
 
       updateCellCounter();
+      updateColumnHighlight();
+    }
+
+    // Devuelve los componentes directos de una columna (sus dependencias en activeColumns)
+    function getColumnDependencies(col) {
+      col = cleanParentheses(col);
+      const mainOpIdx = findMainOperator(col);
+      if (mainOpIdx === -1) {
+        if (col.startsWith('~')) return [cleanParentheses(col.slice(1))];
+        return [];
+      }
+      return [
+        cleanParentheses(col.slice(0, mainOpIdx)),
+        cleanParentheses(col.slice(mainOpIdx + 1))
+      ];
+    }
+
+    // Resalta en amarillo las columnas dependencia y en morado la columna activa
+    function updateColumnHighlight() {
+      const vars    = appState.variables;
+      const cols    = appState.activeColumns;
+      const numRows = Math.pow(2, vars.length);
+
+      // Columna activa = primera columna derivada con alguna celda vacía
+      let focusIdx = -1;
+      for (let c = 0; c < cols.length; c++) {
+        if (!vars.includes(cols[c])) {
+          const hasEmpty = Array.from({ length: numRows }, (_, r) => !appState.studentInput[`${r}_${c}`]).some(Boolean);
+          if (hasEmpty) { focusIdx = c; break; }
+        }
+      }
+
+      // Dependencias de la columna activa
+      const depNames = focusIdx !== -1 ? getColumnDependencies(cols[focusIdx]) : [];
+
+      // Estilos base de cada tipo
+      const baseClass = 'p-3 border border-slate-200 text-xs sm:text-sm tracking-wider font-extrabold transition-colors';
+      const styleFocus = ' bg-[#3B1F6E] text-white border-b-2 border-[#3B1F6E]';
+      const styleDep   = ' bg-amber-100 text-amber-800 border-b-2 border-amber-400';
+      const styleLast  = ' bg-purple-100 text-[#3B1F6E] border-b-2 border-purple-400';
+      const styleVar   = ' text-slate-600';
+
+      // — Encabezados —
+      cols.forEach((col, idx) => {
+        const th = document.getElementById(`th_col_${idx}`);
+        if (!th) return;
+        const isFocus = idx === focusIdx;
+        const isDep   = depNames.includes(cleanParentheses(col));
+        const isLast  = idx === cols.length - 1;
+        th.className  = baseClass + (isFocus ? styleFocus : isDep ? styleDep : isLast ? styleLast : styleVar);
+      });
+
+      // — Celdas del cuerpo: fondo sutil por columna —
+      for (let r = 0; r < numRows; r++) {
+        cols.forEach((col, cIdx) => {
+          const td = document.getElementById(`td_body_${r}_${cIdx}`);
+          if (!td) return;
+          const isFocus = cIdx === focusIdx;
+          const isDep   = depNames.includes(cleanParentheses(col));
+          // Solo tocamos el background; preservamos el resto de las clases
+          td.style.backgroundColor =
+            isFocus ? 'rgba(91,33,182,0.06)' :
+            isDep   ? 'rgba(251,191,36,0.13)' : '';
+        });
+      }
     }
 
     function translateVal(v) { return representationMapping[appState.representationMode][v]; }
@@ -1106,6 +1172,7 @@
       }
 
       updateCellCounter();
+      updateColumnHighlight();
     }
 
     function setCellValDirect(r, c, val) {
@@ -1500,3 +1567,4 @@
 
 </body>
 </html>
+
