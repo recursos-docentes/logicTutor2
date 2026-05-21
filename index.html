@@ -169,12 +169,13 @@
         </div>
 
         <!-- Opciones disponibles (Calculadas pedagógicamente) -->
-        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
-          <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">¿Cuál es el siguiente paso correcto?</p>
-          <div id="containerSubformulaOptions" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <!-- Se inyectan las opciones inteligentes calculadas -->
+        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+          <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">¿Cuál es la siguiente columna que podemos calcular?</p>
+          <div id="containerSubformulaOptions" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Se inyectan las opciones dinámicas de selección interactiva -->
           </div>
-          <div id="feedbackHistory" class="mt-3 text-sm hidden"></div>
+          <!-- Mensaje explicativo y detallado amigable para TEA (DUA) -->
+          <div id="feedbackHistory" class="mt-4 p-4 rounded-xl text-sm font-semibold transition-all hidden"></div>
         </div>
       </div>
 
@@ -224,6 +225,9 @@
             </button>
           </div>
         </div>
+
+        <!-- Contenedor de Alerta DUA/TEA Visible para correcciones (Corregido) -->
+        <div id="feedbackTable" class="mt-4 p-4 rounded-xl text-center font-bold hidden"></div>
       </div>
 
       <!-- FASE C: CLASIFICACIÓN SEMÁFORO (DUA PRINCIPIO 3) -->
@@ -388,8 +392,6 @@
       }
       const vars = Array.from(varsSet).sort();
 
-      // Construcción manual de árbol sintáctico simplificado para encontrar subfórmulas
-      // Utilizaremos un algoritmo robusto basado en balance de paréntesis
       return {
         variables: vars,
         normalized: s
@@ -399,7 +401,6 @@
     // Calcula de forma precisa la Historia Formacional
     // Evita proponer partes arbitrarias o incorrectas
     function calculateFormationalHistory(formulaStr) {
-      // Tokenizador y parser recursivo simple para extraer subfórmulas
       const subfs = new Set();
 
       function getSubformulasRecursive(expr) {
@@ -451,7 +452,6 @@
     function cleanParentheses(expr) {
       expr = expr.trim();
       while (expr.startsWith('(') && expr.endsWith(')')) {
-        // Verificar si los paréntesis realmente se emparejan entre sí
         let depth = 0;
         let match = true;
         for (let i = 0; i < expr.length - 1; i++) {
@@ -473,7 +473,8 @@
 
     function findMainOperator(expr) {
       let depth = 0;
-      let ops = { '=': 1, '>': 2, '|': 3, '&': 4, '~': 5 };
+      // Excluye '~' de los operadores binarios principales de partición.
+      let ops = { '=': 1, '>': 2, '|': 3, '&': 4 };
       let lowestPrec = Infinity;
       let mainOpIdx = -1;
 
@@ -483,7 +484,6 @@
         else if (char === ')') depth--;
         else if (depth === 0 && ops[char] !== undefined) {
           let prec = ops[char];
-          // Para operadores de igual precedencia, tomamos el más a la derecha (asociatividad izquierda-derecha)
           if (prec <= lowestPrec) {
             lowestPrec = prec;
             mainOpIdx = i;
@@ -513,15 +513,23 @@
       // Reiniciar inputs del estudiante
       appState.studentInput = {};
 
-      // Mostrar fases
+      // Mostrar fases e inicializar feedbacks limpios
       document.getElementById('sectionFormationalHistory').classList.remove('hidden');
       document.getElementById('sectionTruthTable').classList.add('hidden');
       document.getElementById('sectionClassification').classList.add('hidden');
+      
+      const fbTable = document.getElementById('feedbackTable');
+      fbTable.classList.add('hidden');
+      fbTable.innerHTML = '';
+
+      const fbHistory = document.getElementById('feedbackHistory');
+      fbHistory.classList.add('hidden');
+      fbHistory.innerHTML = '';
 
       updateInteractiveView();
     }
 
-    // --- ACTUALIZAR LA VISTA INTERACTIVA (DUA & TEA FRIENDLY) ---
+    // --- ACTUALIZAR LA VISTA INTERACTIVA CON OPCIONES MULTICHOICE (NUEVO NIVEL 2 DUA) ---
     function updateInteractiveView() {
       // 1. Traducir fórmulas a símbolos de pantalla según modo seleccionado
       const displayFormula = translateFormula(appState.formulaNormalized);
@@ -537,7 +545,7 @@
         containerActive.appendChild(span);
       });
 
-      // 3. Calcular Opciones Inteligentes de Siguiente Paso Pedagógico (Andamiaje DUA)
+      // 3. Generar Mezcla de Opciones Inteligentes (Andamiaje y Desafío Multichoice)
       const containerOptions = document.getElementById('containerSubformulaOptions');
       containerOptions.innerHTML = '';
 
@@ -545,53 +553,112 @@
       let remaining = appState.subformulas.filter(f => !appState.activeColumns.includes(f));
 
       if (remaining.length === 0) {
-        // Historia formacional completada con éxito
         containerOptions.innerHTML = `
           <div class="col-span-full text-center p-4 bg-emerald-50 text-emerald-800 rounded-xl border border-emerald-200">
             <p class="font-bold text-sm">🎉 ¡Historia Formacional completada con éxito!</p>
             <p class="text-xs mt-1">Todas las columnas necesarias se han ordenado. Procediendo a resolver la tabla.</p>
           </div>
         `;
-        // Habilitar la fase de resolución de la tabla
         showTruthTableResolution();
       } else {
-        // Encontrar cuáles de las restantes son "resolubles" con las columnas actuales
-        // Una subfórmula es resoluble si todos sus componentes inmediatos ya están en activeColumns
+        // Encontrar las que SÍ se pueden resolver ahora mismo (Correctas)
         let resolubles = remaining.filter(f => isResolvableWith(f, appState.activeColumns));
+        // Encontrar las que NO se pueden resolver aún (Distractores inteligentes por orden incorrecto)
+        let noResolubles = remaining.filter(f => !resolubles.includes(f));
 
-        // Por DUA, para no abrumar y asegurar que el estudiante TEA siempre tenga opciones válidas, 
-        // le presentamos todas las resolubles. Si intentan elegir una no resoluble (error de andamiaje),
-        // el sistema lo evita o lo educa. De hecho, para que sea 100% intuitivo, listamos aquí las resolubles claras:
+        // Construir lote de opciones a mostrar en el panel
+        let optionsToShow = [];
+
+        // Agregar las opciones válidas (correctas)
         resolubles.forEach(f => {
+          optionsToShow.push({ formula: f, isCorrect: true, reason: 'ready' });
+        });
+
+        // Agregar distractores que pertenecen a la fórmula pero no están listos todavía
+        noResolubles.forEach(f => {
+          optionsToShow.push({ formula: f, isCorrect: false, reason: 'not_ready' });
+        });
+
+        // Barajar de forma estable o semi-aleatoria para no predecir la posición siempre igual
+        optionsToShow.sort((a, b) => a.formula.length - b.formula.length);
+
+        // Crear botones interactivos de decisión de Historia Formacional
+        optionsToShow.forEach((opt, index) => {
           const btn = document.createElement('button');
-          btn.onclick = () => addSubformulaToTable(f);
-          btn.className = "p-3 bg-white hover:bg-purple-50 border-2 border-slate-200 hover:border-purple-500 rounded-xl font-bold text-sm text-left transition mono flex justify-between items-center";
+          btn.id = `btnHistOpt_${index}`;
+          btn.onclick = () => selectFormationalOption(opt, index);
+          btn.className = "p-4 bg-white hover:bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-left transition mono flex justify-between items-center w-full";
           btn.innerHTML = `
-            <span>${translateFormula(f)}</span>
-            <span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-lg font-bold">Añadir +</span>
+            <span>${translateFormula(opt.formula)}</span>
+            <span class="text-xs text-slate-400 font-bold bg-slate-100 px-2 py-1 rounded-lg">Opción ${index + 1}</span>
           `;
           containerOptions.appendChild(btn);
         });
-
-        // Si por alguna razón de parsing complejo no se detectaran resolubles de inmediato, mostramos la siguiente de la lista
-        if (resolubles.length === 0 && remaining.length > 0) {
-          const nextLogical = remaining[0];
-          const btn = document.createElement('button');
-          btn.onclick = () => addSubformulaToTable(nextLogical);
-          btn.className = "p-3 bg-white hover:bg-purple-50 border-2 border-slate-200 hover:border-purple-500 rounded-xl font-bold text-sm text-left transition mono flex justify-between items-center";
-          btn.innerHTML = `
-            <span>${translateFormula(nextLogical)}</span>
-            <span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-lg font-bold">Añadir +</span>
-          `;
-          containerOptions.appendChild(btn);
-        }
       }
 
-      // Actualizar visualizaciones de los operadores en el glosario
       document.querySelectorAll('.op-disp').forEach(el => {
         const symbol = el.getAttribute('data-symbol');
         el.innerText = translateOperator(symbol);
       });
+    }
+
+    // --- MANEJAR SELECCIÓN DE LA HISTORIA FORMACIONAL CON EXPLICACIÓN ---
+    function selectFormationalOption(option, index) {
+      const fbHistory = document.getElementById('feedbackHistory');
+      fbHistory.classList.remove('hidden');
+
+      // Limpiar estilos anteriores de botones de opción
+      const buttons = document.querySelectorAll('[id^="btnHistOpt_"]');
+      buttons.forEach(btn => {
+        btn.className = btn.className.replace(/\s*border-(emerald|rose|amber)-\d+/g, "");
+        btn.className = btn.className.replace(/\s*bg-(emerald|rose|amber)-\d+/g, "");
+      });
+
+      const selectedBtn = document.getElementById(`btnHistOpt_${index}`);
+
+      if (option.isCorrect) {
+        // Opción Correcta: Resaltar en verde y agregar a la tabla
+        selectedBtn.className += " border-emerald-500 bg-emerald-50/50 text-emerald-900";
+        fbHistory.className = "mt-4 p-4 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 block";
+        fbHistory.innerHTML = `🌟 <strong>¡Excelente elección!</strong> La subfórmula <code>${translateFormula(option.formula)}</code> está lista para calcularse porque ya conocemos todas sus variables constituyentes. ¡Siguiente paso!`;
+        
+        // Agregar tras breve retardo para permitir visualización del éxito
+        setTimeout(() => {
+          addSubformulaToTable(option.formula);
+          fbHistory.classList.add('hidden');
+        }, 1200);
+
+      } else {
+        // Opción incorrecta: Dar retroalimentación de por qué no está lista aún
+        selectedBtn.className += " border-rose-400 bg-rose-50/50 text-rose-900";
+        fbHistory.className = "mt-4 p-4 rounded-xl text-sm font-semibold bg-rose-50 text-rose-800 border border-rose-200 block";
+
+        // Identificar dinámicamente qué subcomponentes le faltan al estudiante para resolverla (DUA)
+        let missingParts = getMissingComponents(option.formula, appState.activeColumns);
+        let missingStr = missingParts.map(p => `<strong>${translateFormula(p)}</strong>`).join(" y ");
+
+        fbHistory.innerHTML = `⚠️ <strong>Todavía no podemos resolver esa:</strong> Para poder calcular <code>${translateFormula(option.formula)}</code>, primero necesitas haber colocado en la tabla las columnas de sus partes internas. <br><br>👉 Falta añadir primero: ${missingStr}.`;
+      }
+    }
+
+    // Identifica cuáles de las dependencias inmediatas de una subfórmula faltan en la lista activa
+    function getMissingComponents(f, activeList) {
+      f = cleanParentheses(f);
+      let missing = [];
+      let mainOpIdx = findMainOperator(f);
+      
+      if (mainOpIdx === -1) {
+        if (f.startsWith('~')) {
+          let inner = f.slice(1);
+          if (!activeList.includes(inner)) missing.push(inner);
+        }
+      } else {
+        let left = cleanParentheses(f.slice(0, mainOpIdx));
+        let right = cleanParentheses(f.slice(mainOpIdx + 1));
+        if (!activeList.includes(left)) missing.push(left);
+        if (!activeList.includes(right)) missing.push(right);
+      }
+      return missing;
     }
 
     // Comprueba si una subfórmula puede construirse con las columnas disponibles
@@ -613,7 +680,6 @@
     function addSubformulaToTable(f) {
       if (!appState.activeColumns.includes(f)) {
         appState.activeColumns.push(f);
-        // Pequeño feedback sonoro / visual táctil
         updateInteractiveView();
       }
     }
@@ -629,7 +695,6 @@
       const mode = appState.representationMode;
       const map = representationMapping[mode];
 
-      // Reemplazos ordenados para evitar colisiones
       result = result.replace(/~/g, map['~']);
       result = result.replace(/&/g, map['&']);
       result = result.replace(/\|/g, map['|']);
@@ -646,7 +711,7 @@
     // --- CONSTRUIR LA TABLA DE VERDAD INTERACTIVA EN EL DOM ---
     function buildTruthTableDOM() {
       const vars = appState.variables;
-      const cols = appState.activeColumns; // Estas son las columnas que el alumno ha ordenado
+      const cols = appState.activeColumns;
 
       // 1. Generar Encabezado
       const headerRow = document.getElementById('tableHeaderRow');
@@ -664,19 +729,15 @@
       const tableBody = document.getElementById('tableBody');
       tableBody.innerHTML = '';
 
-      // Generar y almacenar los valores reales correctos de la tabla de verdad para validación
       appState.tableValues = [];
 
       for (let r = 0; r < numRows; r++) {
         const rowData = {};
-        // Asignar valores de variables para esta fila
         vars.forEach((v, vIdx) => {
-          // El primer elemento cambia cada 2^(n-1), el segundo 2^(n-2), etc.
           const divisor = Math.pow(2, vars.length - vIdx - 1);
           rowData[v] = (Math.floor(r / divisor) % 2 === 0) ? 'V' : 'F';
         });
 
-        // Calcular el resto de columnas de forma ordenada
         cols.forEach(col => {
           if (!vars.includes(col)) {
             rowData[col] = evaluateExpression(col, rowData);
@@ -694,16 +755,13 @@
           td.className = "p-2 border border-slate-200";
 
           if (vars.includes(col)) {
-            // Variables ya dadas resueltas (andamiaje)
             const val = rowData[col];
             td.className += val === 'V' ? " text-emerald-600 font-bold" : " text-rose-500 font-bold";
             td.innerText = translateVal(val);
           } else {
-            // Celda interactiva para el estudiante (Input)
             const cellKey = `${r}_${cIdx}`;
             const stValue = appState.studentInput[cellKey] || '';
 
-            // Selector interactivo amigable para TEA (evita error de digitación)
             td.innerHTML = `
               <div class="flex items-center justify-center gap-1">
                 <button onclick="setCellVal(${r}, ${cIdx}, 'V')" id="btnCell_${r}_${cIdx}_V" class="w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all ${stValue === 'V' ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300'}">
@@ -731,7 +789,6 @@
     // Evalúa una expresión lógica dados los valores de las variables en una fila
     function evaluateExpression(expr, rowVals) {
       expr = cleanParentheses(expr);
-      // Si la expresión está calculada y guardada en rowVals directamente (ej variables o subfórmulas ya calculadas)
       if (rowVals[expr] !== undefined) return rowVals[expr];
 
       let mainOpIdx = findMainOperator(expr);
@@ -763,14 +820,12 @@
     function setCellVal(r, c, val) {
       const cellKey = `${r}_${c}`;
       
-      // Si hace clic en el valor ya seleccionado, lo deselecciona
       if (appState.studentInput[cellKey] === val) {
         delete appState.studentInput[cellKey];
       } else {
         appState.studentInput[cellKey] = val;
       }
 
-      // Actualizar UI de los botones específicos de esta celda
       const btnV = document.getElementById(`btnCell_${r}_${c}_V`);
       const btnF = document.getElementById(`btnCell_${r}_${c}_F`);
       const current = appState.studentInput[cellKey];
@@ -810,11 +865,9 @@
       const cols = appState.activeColumns;
       const numRows = Math.pow(2, vars.length);
 
-      // Encontrar la primera columna no completada completamente
       let colToRevealIdx = -1;
       for (let c = 0; c < cols.length; c++) {
         if (!vars.includes(cols[c])) {
-          // Verificar si faltan respuestas en esta columna
           let completed = true;
           for (let r = 0; r < numRows; r++) {
             if (!appState.studentInput[`${r}_${c}`]) {
@@ -830,7 +883,6 @@
       }
 
       if (colToRevealIdx !== -1) {
-        // Rellenar toda esta columna con las respuestas correctas
         for (let r = 0; r < numRows; r++) {
           const colName = cols[colToRevealIdx];
           const correctVal = appState.tableValues[r][colName];
@@ -846,6 +898,7 @@
       const numRows = Math.pow(2, vars.length);
 
       let allCorrect = true;
+      let hasEmpty = false;
 
       for (let r = 0; r < numRows; r++) {
         cols.forEach((col, cIdx) => {
@@ -856,34 +909,55 @@
             const btnV = document.getElementById(`btnCell_${r}_${cIdx}_V`);
             const btnF = document.getElementById(`btnCell_${r}_${cIdx}_F`);
 
-            if (studentVal !== correctVal) {
+            // Reiniciar anillos de error suavemente
+            if (btnV && btnF) {
+              btnV.className = btnV.className.replace(/\s*ring-\d+\s*ring-\w+-\d+/g, "");
+              btnF.className = btnF.className.replace(/\s*ring-\d+\s*ring-\w+-\d+/g, "");
+            }
+
+            if (!studentVal) {
               allCorrect = false;
-              // Marcar error suavemente en la celda
+              hasEmpty = true;
+              // Resaltar en color amarillo suave por DUA si la celda está vacía
+              if (btnV && btnF) {
+                btnV.className += " ring-4 ring-amber-300";
+                btnF.className += " ring-4 ring-amber-300";
+              }
+            } else if (studentVal !== correctVal) {
+              allCorrect = false;
+              // Marcar error en rojo si está equivocado
               if (btnV && btnF) {
                 if (studentVal === 'V') btnV.className += " ring-4 ring-rose-300";
                 if (studentVal === 'F') btnF.className += " ring-4 ring-rose-300";
               }
             } else {
-              // Limpiar errores anteriores y mostrar confirmación de correcto
+              // Confirmación verde rápida
               if (btnV && btnF) {
-                btnV.classList.remove('ring-4', 'ring-rose-300');
-                btnF.classList.remove('ring-4', 'ring-rose-300');
+                if (studentVal === 'V') btnV.className += " ring-2 ring-emerald-300";
+                if (studentVal === 'F') btnF.className += " ring-2 ring-emerald-300";
               }
             }
           }
         });
       }
 
+      const fbTable = document.getElementById('feedbackTable');
+      fbTable.classList.remove('hidden');
+
       if (allCorrect) {
+        fbTable.className = "mt-4 p-4 rounded-xl text-center font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 block";
+        fbTable.innerHTML = "🎉 ¡Perfecto! Todas las celdas de tu tabla de verdad son correctas. Ya puedes continuar con el semáforo de abajo.";
+        
         // Habilitar sección de Clasificación (Siguiente paso DUA)
         document.getElementById('sectionClassification').classList.remove('hidden');
-        // Hacer scroll suave hacia la sección
         document.getElementById('sectionClassification').scrollIntoView({ behavior: 'smooth' });
       } else {
-        // Notificación DUA no molesta
-        const fbClass = document.getElementById('feedbackClassification');
-        fbClass.className = "mt-4 p-4 rounded-xl text-center font-bold bg-rose-50 text-rose-800 border border-rose-200 block";
-        fbClass.innerHTML = "⚠️ Hay algunas respuestas incorrectas o incompletas en la tabla. ¡Revísalas con calma!";
+        fbTable.className = "mt-4 p-4 rounded-xl text-center font-bold bg-rose-50 text-rose-800 border border-rose-200 block";
+        if (hasEmpty) {
+          fbTable.innerHTML = "⚠️ Tienes celdas vacías (resaltadas en amarillo). ¡Selecciona V o F para completarlas!";
+        } else {
+          fbTable.innerHTML = "⚠️ Tienes respuestas incorrectas en la tabla (resaltadas en rojo). ¡Revísalas usando las guías lógicas!";
+        }
       }
     }
 
@@ -912,11 +986,11 @@
         fbClass.className = "mt-4 p-4 rounded-xl text-center font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 block";
         
         let expl = '';
-        if (choice === 'tautology') expl = "¡Es una Tautología! Todos los valores posibles de salida son Verdaderos (🟢). El programa es 100% estable.";
-        if (choice === 'contradiction') expl = "¡Es una Contradicción! Todos los valores posibles de salida son Falsos (🔴). El programa contiene un bloqueo.";
-        if (choice === 'contingency') expl = "¡Es una Contingencia! El programa varía entre Verdadero y Falso (🟡) según los valores de entrada.";
+        if (choice === 'tautology') expl = "¡Es una Tautología! Todos los resultados son siempre Verdaderos (🟢). El sistema es 100% confiable.";
+        if (choice === 'contradiction') expl = "¡Es una Contradicción! Todos los resultados son siempre Falsos (🔴). El sistema tiene un fallo de código.";
+        if (choice === 'contingency') expl = "¡Es una Contingencia! El resultado varía entre Verdadero y Falso (🟡) según los valores de entrada.";
 
-        fbClass.innerHTML = `🎉 ¡Perfecto! ${expl}`;
+        fbClass.innerHTML = `🎉 ¡Correcto! ${expl}`;
 
         // Mostrar Modal de Éxito
         document.getElementById('txtCongratsMessage').innerHTML = `Has completado el análisis de <strong class="mono">${translateFormula(appState.formulaNormalized)}</strong>.<br><br>${expl}`;
@@ -931,11 +1005,9 @@
 
     function closeCongratsModal() {
       document.getElementById('congratsModal').classList.add('hidden');
-      // Limpiar y volver al inicio
       document.getElementById('sectionFormationalHistory').classList.remove('hidden');
       document.getElementById('sectionTruthTable').classList.add('hidden');
       document.getElementById('sectionClassification').classList.add('hidden');
-      // Subir arriba
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   </script>
