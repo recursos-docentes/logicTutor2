@@ -173,6 +173,75 @@
           </div>
         </div>
       </div>
+
+      <!-- Card 3: Equivalencia e Implicancia -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+        <h2 class="text-lg font-bold text-[#3B1F6E] mb-1 flex items-center gap-2">
+          <span>🔗</span> Comparar Fórmulas
+        </h2>
+        <p class="text-xs text-slate-500 mb-4">Ingresá dos fórmulas para analizar su relación lógica (equivalencia e implicancia).</p>
+
+        <!-- Fórmula α -->
+        <div class="mb-3">
+          <label class="text-xs font-bold text-slate-600 mb-1 block">Fórmula <span class="text-blue-600">α</span> (alfa)</label>
+          <div class="relative">
+            <input type="text" id="inputFormulaAlpha"
+              oninput="onCompFormulaInput('alpha')" onfocus="compState.lastFocused='alpha'"
+              class="w-full p-2.5 pr-8 border-2 border-slate-200 rounded-xl mono font-bold text-center text-base focus:border-blue-400 outline-none transition-colors"
+              placeholder="Ej: p → q" value="p → q">
+            <span id="statusAlpha" class="absolute right-2 top-1/2 -translate-y-1/2 text-sm font-black opacity-0 pointer-events-none transition-opacity"></span>
+          </div>
+        </div>
+
+        <!-- Fórmula β -->
+        <div class="mb-3">
+          <label class="text-xs font-bold text-slate-600 mb-1 block">Fórmula <span class="text-amber-600">β</span> (beta)</label>
+          <div class="relative">
+            <input type="text" id="inputFormulaBeta"
+              oninput="onCompFormulaInput('beta')" onfocus="compState.lastFocused='beta'"
+              class="w-full p-2.5 pr-8 border-2 border-slate-200 rounded-xl mono font-bold text-center text-base focus:border-amber-400 outline-none transition-colors"
+              placeholder="Ej: ¬p ∨ q" value="¬p ∨ q">
+            <span id="statusBeta" class="absolute right-2 top-1/2 -translate-y-1/2 text-sm font-black opacity-0 pointer-events-none transition-opacity"></span>
+          </div>
+        </div>
+
+        <!-- Error box -->
+        <div id="compErrorBox" class="hidden mb-3 p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700 font-semibold flex items-start gap-1.5" role="alert" aria-live="polite">
+          <span aria-hidden="true">⚠️</span>
+          <span id="compErrorMsg"></span>
+        </div>
+
+        <!-- Botones de operadores (aplican al campo activo) -->
+        <p class="text-xs text-slate-400 mb-1">Insertá en el campo activo:</p>
+        <div class="grid grid-cols-7 gap-1 mb-3">
+          <button onclick="insertCompOp('¬')" class="p-1.5 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono">¬</button>
+          <button onclick="insertCompOp('∧')" class="p-1.5 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono">∧</button>
+          <button onclick="insertCompOp('∨')" class="p-1.5 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono">∨</button>
+          <button onclick="insertCompOp('→')" class="p-1.5 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono">→</button>
+          <button onclick="insertCompOp('↔')" class="p-1.5 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono">↔</button>
+          <button onclick="insertCompOp('(')" class="p-1.5 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono">(</button>
+          <button onclick="insertCompOp(')')" class="p-1.5 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono">)</button>
+        </div>
+
+        <!-- Presets -->
+        <p class="text-xs text-slate-400 mb-1">Ejemplos:</p>
+        <div class="flex flex-col gap-1 mb-4">
+          <button onclick="selectCompPreset('p → q', '¬p ∨ q')" class="text-left p-2 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 text-xs mono font-bold transition">
+            p → q  &nbsp;≡?&nbsp;  ¬p ∨ q
+          </button>
+          <button onclick="selectCompPreset('p ∧ q', 'q ∧ p')" class="text-left p-2 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 text-xs mono font-bold transition">
+            p ∧ q  &nbsp;≡?&nbsp;  q ∧ p
+          </button>
+          <button onclick="selectCompPreset('p ∧ q', 'p ∨ q')" class="text-left p-2 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 text-xs mono font-bold transition">
+            p ∧ q  &nbsp;⟹?&nbsp;  p ∨ q
+          </button>
+        </div>
+
+        <button onclick="startComparison()" class="w-full bg-[#3B1F6E] hover:bg-[#2D1755] text-white py-3 px-4 rounded-xl font-bold text-sm tracking-wide transition shadow-sm">
+          Comparar Fórmulas
+        </button>
+      </div>
+
     </section>
 
     <!-- PANEL DERECHO: Mesa de Trabajo -->
@@ -250,9 +319,6 @@
             <button onclick="checkTableAnswers()" class="px-5 py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl font-bold text-xs tracking-wider uppercase transition">
               Verificar Respuestas
             </button>
-            <button onclick="revealStepByStep()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs tracking-wider uppercase transition" title="Muestra el resultado de la siguiente columna si te trancas">
-              Ayuda (Paso a paso)
-            </button>
           </div>
         </div>
 
@@ -295,6 +361,93 @@
         </div>
 
         <div id="feedbackClassification" class="mt-4 p-4 rounded-xl text-center font-bold hidden"></div>
+      </div>
+
+      <!-- SECCIÓN: TABLA COMPARATIVA -->
+      <div id="sectionComparisonTable" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 step-transition hidden">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Análisis Comparativo</span>
+            <h2 class="text-xl font-black mt-2 text-slate-800">Tabla de Comparación</h2>
+          </div>
+          <span class="text-3xl" aria-hidden="true">🔗</span>
+        </div>
+
+        <!-- Fórmulas activas -->
+        <div class="flex gap-3 mb-4 flex-wrap">
+          <div class="flex items-center gap-2 bg-blue-50 border border-blue-200 px-4 py-2 rounded-xl">
+            <span class="text-xs font-black text-blue-600 uppercase tracking-wider">α</span>
+            <span class="mono font-bold text-slate-800 text-sm" id="displayAlpha">--</span>
+          </div>
+          <div class="flex items-center gap-2 bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl">
+            <span class="text-xs font-black text-amber-600 uppercase tracking-wider">β</span>
+            <span class="mono font-bold text-slate-800 text-sm" id="displayBeta">--</span>
+          </div>
+        </div>
+
+        <p class="text-sm text-slate-600 mb-4">
+          Las columnas <span class="font-bold text-blue-600">α</span> y <span class="font-bold text-amber-600">β</span> están destacadas.
+          Analizá sus valores fila a fila para determinar la relación entre las dos fórmulas.
+        </p>
+
+        <div class="overflow-x-auto border border-slate-200 rounded-xl mb-3">
+          <table class="w-full text-center border-collapse text-sm" id="comparisonTable">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200" id="compTableHeader"></tr>
+            </thead>
+            <tbody class="mono" id="compTableBody"></tbody>
+          </table>
+        </div>
+
+        <p class="text-xs text-slate-400 italic">
+          💡 Las filas donde α y β difieren están resaltadas — son las claves para determinar la relación.
+        </p>
+      </div>
+
+      <!-- SECCIÓN: CLASIFICAR LA RELACIÓN -->
+      <div id="sectionRelationClassification" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 step-transition hidden">
+        <h2 class="text-lg font-bold text-[#3B1F6E] mb-2 flex items-center gap-2">
+          <span>🧩</span> ¿Cuál es la relación entre α y β?
+        </h2>
+        <p class="text-sm text-slate-600 mb-5">
+          Basándote en la tabla de arriba, elegí la opción que mejor describe la relación lógica entre las dos fórmulas:
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <button onclick="verifyRelation('equivalent')" class="p-5 rounded-2xl border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 text-left transition flex items-start gap-3">
+            <span class="text-3xl mt-0.5">≡</span>
+            <div>
+              <h3 class="font-bold text-blue-800">α ≡ β &nbsp;(Equivalentes)</h3>
+              <p class="text-xs text-slate-500 mt-1">Las columnas α y β son idénticas en todas las filas. α ↔ β es una tautología.</p>
+            </div>
+          </button>
+
+          <button onclick="verifyRelation('alpha_implies_beta')" class="p-5 rounded-2xl border-2 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 text-left transition flex items-start gap-3">
+            <span class="text-3xl mt-0.5">⟹</span>
+            <div>
+              <h3 class="font-bold text-emerald-800">α ⟹ β &nbsp;(α implica β)</h3>
+              <p class="text-xs text-slate-500 mt-1">Toda fila donde α=V también tiene β=V. No hay contraejemplo.</p>
+            </div>
+          </button>
+
+          <button onclick="verifyRelation('beta_implies_alpha')" class="p-5 rounded-2xl border-2 border-slate-200 hover:border-amber-500 hover:bg-amber-50/40 text-left transition flex items-start gap-3">
+            <span class="text-3xl mt-0.5">⟸</span>
+            <div>
+              <h3 class="font-bold text-amber-800">β ⟹ α &nbsp;(β implica α)</h3>
+              <p class="text-xs text-slate-500 mt-1">Toda fila donde β=V también tiene α=V. No hay contraejemplo.</p>
+            </div>
+          </button>
+
+          <button onclick="verifyRelation('none')" class="p-5 rounded-2xl border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-50 text-left transition flex items-start gap-3">
+            <span class="text-3xl mt-0.5">✗</span>
+            <div>
+              <h3 class="font-bold text-slate-700">Ninguna de las anteriores</h3>
+              <p class="text-xs text-slate-500 mt-1">Existen contraejemplos en ambas direcciones.</p>
+            </div>
+          </button>
+        </div>
+
+        <div id="feedbackRelation" class="mt-4 p-4 rounded-xl font-semibold text-sm hidden"></div>
       </div>
 
     </section>
@@ -1081,6 +1234,267 @@
       document.getElementById('sectionTruthTable').classList.add('hidden');
       document.getElementById('sectionClassification').classList.add('hidden');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+
+    // ─── ACTIVIDAD: EQUIVALENCIA E IMPLICANCIA ────────────────────────────────
+
+    let compState = {
+      lastFocused: 'alpha',
+      normalizedAlpha: '',
+      normalizedBeta: '',
+      variables: [],
+      tableValues: [],
+      actualRelation: null,
+    };
+
+    function onCompFormulaInput(which) {
+      const inputId  = which === 'alpha' ? 'inputFormulaAlpha' : 'inputFormulaBeta';
+      const statusId = which === 'alpha' ? 'statusAlpha' : 'statusBeta';
+      compState.lastFocused = which;
+
+      // Sanitizar: solo símbolos lógicos, letras y paréntesis
+      const input  = document.getElementById(inputId);
+      const before = input.value;
+      const pos    = input.selectionStart;
+      const cleaned = before.replace(/[^a-zA-Z¬∧∨→↔()\s]/g, '');
+      if (cleaned !== before) {
+        input.value = cleaned;
+        input.setSelectionRange(Math.min(pos, cleaned.length), Math.min(pos, cleaned.length));
+      }
+
+      const icon = document.getElementById(statusId);
+      const raw  = input.value;
+      if (!raw.trim()) {
+        icon.className = 'absolute right-2 top-1/2 -translate-y-1/2 text-sm font-black opacity-0 pointer-events-none transition-opacity';
+        input.classList.remove('border-rose-400', 'border-emerald-400');
+        input.classList.add('border-slate-200');
+        return;
+      }
+
+      const { normalized } = parseFormula(raw);
+      const { valid }      = isValidFormula(normalized);
+      if (valid) {
+        icon.textContent = '✓';
+        icon.className   = 'absolute right-2 top-1/2 -translate-y-1/2 text-sm font-black text-emerald-600 opacity-100 pointer-events-none transition-opacity';
+        input.classList.remove('border-slate-200', 'border-rose-400');
+        input.classList.add('border-emerald-400');
+      } else {
+        icon.textContent = '✗';
+        icon.className   = 'absolute right-2 top-1/2 -translate-y-1/2 text-sm font-black text-rose-500 opacity-100 pointer-events-none transition-opacity';
+        input.classList.remove('border-slate-200', 'border-emerald-400');
+        input.classList.add('border-rose-400');
+      }
+      hideCompError();
+    }
+
+    function insertCompOp(char) {
+      const inputId = compState.lastFocused === 'beta' ? 'inputFormulaBeta' : 'inputFormulaAlpha';
+      const input   = document.getElementById(inputId);
+      const start   = input.selectionStart;
+      const end     = input.selectionEnd;
+      input.value   = input.value.substring(0, start) + char + input.value.substring(end);
+      input.focus();
+      input.setSelectionRange(start + 1, start + 1);
+      onCompFormulaInput(compState.lastFocused);
+    }
+
+    function selectCompPreset(alpha, beta) {
+      document.getElementById('inputFormulaAlpha').value = alpha;
+      document.getElementById('inputFormulaBeta').value  = beta;
+      onCompFormulaInput('alpha');
+      onCompFormulaInput('beta');
+      startComparison();
+    }
+
+    function showCompError(msg) {
+      document.getElementById('compErrorMsg').textContent = msg;
+      document.getElementById('compErrorBox').classList.remove('hidden');
+    }
+
+    function hideCompError() {
+      document.getElementById('compErrorBox').classList.add('hidden');
+      document.getElementById('compErrorMsg').textContent = '';
+    }
+
+    function startComparison() {
+      const rawAlpha = document.getElementById('inputFormulaAlpha').value;
+      const rawBeta  = document.getElementById('inputFormulaBeta').value;
+
+      if (!rawAlpha.trim()) { showCompError('Ingresá la fórmula α antes de comparar.'); return; }
+      if (!rawBeta.trim())  { showCompError('Ingresá la fórmula β antes de comparar.'); return; }
+
+      const parsedAlpha = parseFormula(rawAlpha);
+      const parsedBeta  = parseFormula(rawBeta);
+      const valA = isValidFormula(parsedAlpha.normalized);
+      const valB = isValidFormula(parsedBeta.normalized);
+
+      if (!valA.valid) { showCompError('Fórmula α: ' + valA.msg); return; }
+      if (!valB.valid) { showCompError('Fórmula β: ' + valB.msg); return; }
+      if (parsedAlpha.variables.length === 0) { showCompError('La fórmula α necesita al menos una variable.'); return; }
+      if (parsedBeta.variables.length === 0)  { showCompError('La fórmula β necesita al menos una variable.'); return; }
+
+      hideCompError();
+
+      compState.normalizedAlpha = parsedAlpha.normalized;
+      compState.normalizedBeta  = parsedBeta.normalized;
+      compState.variables       = [...new Set([...parsedAlpha.variables, ...parsedBeta.variables])].sort();
+
+      // Ocultar secciones de la otra actividad
+      document.getElementById('sectionFormationalHistory').classList.add('hidden');
+      document.getElementById('sectionTruthTable').classList.add('hidden');
+      document.getElementById('sectionClassification').classList.add('hidden');
+      document.getElementById('feedbackRelation').classList.add('hidden');
+
+      buildComparisonTable();
+
+      document.getElementById('sectionComparisonTable').classList.remove('hidden');
+      document.getElementById('sectionRelationClassification').classList.remove('hidden');
+      document.getElementById('sectionComparisonTable').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function buildComparisonTable() {
+      const vars    = compState.variables;
+      const numRows = Math.pow(2, vars.length);
+      const normA   = compState.normalizedAlpha.toLowerCase();
+      const normB   = compState.normalizedBeta.toLowerCase();
+
+      document.getElementById('displayAlpha').textContent = translateFormula(compState.normalizedAlpha);
+      document.getElementById('displayBeta').textContent  = translateFormula(compState.normalizedBeta);
+
+      // Encabezado: variables + columna α + columna β
+      const header = document.getElementById('compTableHeader');
+      header.innerHTML = '';
+      vars.forEach(v => {
+        const th = document.createElement('th');
+        th.className  = 'p-3 border border-slate-200 text-xs sm:text-sm font-extrabold text-slate-500';
+        th.textContent = v.toUpperCase();
+        header.appendChild(th);
+      });
+      const thA = document.createElement('th');
+      thA.className  = 'p-3 border border-slate-200 text-xs sm:text-sm font-extrabold text-blue-700 bg-blue-50 border-b-2 border-blue-300';
+      thA.textContent = 'α: ' + translateFormula(compState.normalizedAlpha);
+      header.appendChild(thA);
+      const thB = document.createElement('th');
+      thB.className  = 'p-3 border border-slate-200 text-xs sm:text-sm font-extrabold text-amber-700 bg-amber-50 border-b-2 border-amber-300';
+      thB.textContent = 'β: ' + translateFormula(compState.normalizedBeta);
+      header.appendChild(thB);
+
+      // Cuerpo
+      const tbody = document.getElementById('compTableBody');
+      tbody.innerHTML = '';
+      compState.tableValues = [];
+
+      let equivalent        = true;
+      let alphaImpliesBeta  = true;
+      let betaImpliesAlpha  = true;
+
+      for (let r = 0; r < numRows; r++) {
+        const rowData = {};
+        vars.forEach((v, vIdx) => {
+          rowData[v] = (Math.floor(r / Math.pow(2, vars.length - vIdx - 1)) % 2 === 0) ? 'V' : 'F';
+        });
+        const valAlpha = evaluateExpression(normA, rowData);
+        const valBeta  = evaluateExpression(normB, rowData);
+        rowData['__alpha__'] = valAlpha;
+        rowData['__beta__']  = valBeta;
+        compState.tableValues.push(rowData);
+
+        if (valAlpha !== valBeta)                        equivalent       = false;
+        if (valAlpha === 'V' && valBeta  === 'F')        alphaImpliesBeta = false;
+        if (valBeta  === 'V' && valAlpha === 'F')        betaImpliesAlpha = false;
+
+        const tr = document.createElement('tr');
+        // Resaltar filas donde difieren — son los contraejemplos clave
+        tr.className = 'border-b border-slate-200 transition-colors ' +
+          (valAlpha !== valBeta ? 'bg-rose-50/50' : 'hover:bg-slate-50');
+
+        vars.forEach(v => {
+          const td = document.createElement('td');
+          td.className  = 'p-2 border border-slate-200 font-bold ' +
+            (rowData[v] === 'V' ? 'text-emerald-600' : 'text-rose-500');
+          td.textContent = translateVal(rowData[v]);
+          tr.appendChild(td);
+        });
+
+        // Columna α
+        const tdA = document.createElement('td');
+        tdA.className  = 'p-2 border border-slate-200 font-extrabold bg-blue-50/60 ' +
+          (valAlpha === 'V' ? 'text-emerald-600' : 'text-rose-500');
+        tdA.textContent = translateVal(valAlpha);
+        tr.appendChild(tdA);
+
+        // Columna β
+        const tdB = document.createElement('td');
+        tdB.className  = 'p-2 border border-slate-200 font-extrabold bg-amber-50/60 ' +
+          (valBeta === 'V' ? 'text-emerald-600' : 'text-rose-500');
+        tdB.textContent = translateVal(valBeta);
+        tr.appendChild(tdB);
+
+        tbody.appendChild(tr);
+      }
+
+      compState.actualRelation = { equivalent, alphaImpliesBeta, betaImpliesAlpha };
+    }
+
+    function getCorrectRelation() {
+      const { equivalent, alphaImpliesBeta, betaImpliesAlpha } = compState.actualRelation;
+      if (equivalent)       return 'equivalent';
+      if (alphaImpliesBeta) return 'alpha_implies_beta';
+      if (betaImpliesAlpha) return 'beta_implies_alpha';
+      return 'none';
+    }
+
+    function verifyRelation(choice) {
+      const correct = getCorrectRelation();
+      const rel     = compState.actualRelation;
+      const fb      = document.getElementById('feedbackRelation');
+      fb.classList.remove('hidden');
+
+      const isCorrect = (choice === correct);
+
+      // Buscar contraejemplos para el feedback
+      const counterAlphaBeta = compState.tableValues.find(r => r['__alpha__'] === 'V' && r['__beta__'] === 'F');
+      const counterBetaAlpha = compState.tableValues.find(r => r['__beta__'] === 'V' && r['__alpha__'] === 'F');
+      const counterDiff      = compState.tableValues.find(r => r['__alpha__'] !== r['__beta__']);
+
+      function fmtRow(row) {
+        return compState.variables.map(v => `${v.toUpperCase()}=${row[v]}`).join(', ');
+      }
+
+      let msg = '';
+
+      if (isCorrect) {
+        fb.className = 'mt-4 p-4 rounded-xl font-semibold text-sm bg-emerald-50 text-emerald-800 border border-emerald-200 block';
+        if (choice === 'equivalent')
+          msg = `✅ ¡Correcto! Las columnas α y β son <strong>idénticas en todas las filas</strong>, por lo tanto α ≡ β. Esto también significa que α ⟹ β y β ⟹ α simultáneamente, y que α ↔ β es una tautología.`;
+        else if (choice === 'alpha_implies_beta')
+          msg = `✅ ¡Correcto! En <strong>toda fila donde α=V, β también es V</strong> → α ⟹ β.<br>
+            <span class="font-normal block mt-1">💡 Sin embargo, β no implica α: con ${fmtRow(counterBetaAlpha)}, β=V pero α=F.</span>`;
+        else if (choice === 'beta_implies_alpha')
+          msg = `✅ ¡Correcto! En <strong>toda fila donde β=V, α también es V</strong> → β ⟹ α.<br>
+            <span class="font-normal block mt-1">💡 Sin embargo, α no implica β: con ${fmtRow(counterAlphaBeta)}, α=V pero β=F.</span>`;
+        else
+          msg = `✅ ¡Correcto! No hay equivalencia ni implicancia en ninguna dirección.<br>
+            <span class="font-normal block mt-1">Contraejemplo de α⟹β: con ${fmtRow(counterAlphaBeta)}, α=V y β=F.<br>
+            Contraejemplo de β⟹α: con ${fmtRow(counterBetaAlpha)}, β=V y α=F.</span>`;
+      } else {
+        fb.className = 'mt-4 p-4 rounded-xl font-semibold text-sm bg-rose-50 text-rose-800 border border-rose-200 block';
+        if (correct === 'equivalent')
+          msg = `❌ Son <strong>equivalentes</strong> (α ≡ β): las columnas son idénticas en todas las filas.`;
+        else if (correct === 'alpha_implies_beta')
+          msg = `❌ La relación correcta es <strong>α ⟹ β</strong>: no hay ninguna fila donde α=V y β=F.<br>
+            <span class="font-normal block mt-1">Sí existe un contraejemplo de β⟹α: con ${fmtRow(counterBetaAlpha)}, β=V pero α=F.</span>`;
+        else if (correct === 'beta_implies_alpha')
+          msg = `❌ La relación correcta es <strong>β ⟹ α</strong>: no hay ninguna fila donde β=V y α=F.<br>
+            <span class="font-normal block mt-1">Sí existe un contraejemplo de α⟹β: con ${fmtRow(counterAlphaBeta)}, α=V pero β=F.</span>`;
+        else
+          msg = `❌ No existe ninguna relación de equivalencia ni implicancia.<br>
+            <span class="font-normal block mt-1">Contraejemplo de α⟹β: con ${fmtRow(counterAlphaBeta)}, α=V y β=F.<br>
+            Contraejemplo de β⟹α: con ${fmtRow(counterBetaAlpha)}, β=V y α=F.</span>`;
+      }
+
+      fb.innerHTML = msg;
     }
   </script>
 
