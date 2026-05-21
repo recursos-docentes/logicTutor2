@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lógica DUA: Constructor de Tablas de Verdad</title>
-  <!-- Tailwind CSS para diseño moderno -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts para excelente legibilidad -->
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body {
@@ -16,15 +14,22 @@
     .mono {
       font-family: 'JetBrains Mono', monospace;
     }
-    /* Estilos personalizados para transiciones sensorialmente amigables */
     .step-transition {
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    /* Foco de alta accesibilidad */
     .focus-ring:focus {
       outline: 3px solid #E91E8C;
       outline-offset: 2px;
     }
+    /* Shake animation para fórmula inválida */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-6px); }
+      40%       { transform: translateX(6px); }
+      60%       { transform: translateX(-4px); }
+      80%       { transform: translateX(4px); }
+    }
+    .shake { animation: shake 0.35s ease; }
   </style>
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col">
@@ -39,7 +44,7 @@
           <p class="text-purple-200 text-xs">Aprendizaje Accesible de Lógica Proposicional</p>
         </div>
       </div>
-      
+
       <!-- Selector de Modo de Representación (DUA Principio 1) -->
       <div class="flex bg-purple-950/40 p-1.5 rounded-xl border border-purple-400/20">
         <button id="btnModeTraditional" onclick="setRepresentationMode('traditional')" class="px-4 py-1.5 rounded-lg text-sm font-bold transition-all bg-[#E91E8C] text-white">
@@ -53,17 +58,17 @@
   </header>
 
   <main class="flex-grow max-w-6xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-    
-    <!-- PANEL IZQUIERDO: Configuración e Instrucciones Guiadas (Instrucciones TEA-friendly) -->
+
+    <!-- PANEL IZQUIERDO -->
     <section class="lg:col-span-4 flex flex-col gap-6">
-      
+
       <!-- Card 1: Selección de Fórmula -->
       <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
         <h2 class="text-lg font-bold text-[#3B1F6E] mb-3 flex items-center gap-2">
           <span>🧠</span> Paso 1: Elige o escribe una fórmula
         </h2>
         <p class="text-sm text-slate-500 mb-4">Selecciona un ejercicio prediseñado o escribe una fórmula personalizada.</p>
-        
+
         <!-- Fórmulas Prediseñadas -->
         <div class="grid grid-cols-1 gap-2 mb-4">
           <button onclick="selectPreset('(p & q) > p')" class="preset-btn w-full text-left p-3 rounded-xl border border-slate-200 hover:border-purple-300 hover:bg-purple-50/50 transition text-sm flex justify-between items-center">
@@ -95,15 +100,43 @@
 
         <!-- Entrada Manual de Fórmula -->
         <div class="mt-4">
-          <input type="text" id="inputFormula" class="w-full p-3 border-2 border-slate-200 rounded-xl mono font-bold text-center text-lg focus:border-[#E91E8C] outline-none" placeholder="Escribe aquí..." value="(p & q) > p">
-          
-          <!-- Botones Rápidos para añadir operadores al input -->
+          <!-- Input con indicador de estado -->
+          <div class="relative">
+            <input
+              type="text"
+              id="inputFormula"
+              oninput="onFormulaInput()"
+              class="w-full p-3 pr-10 border-2 border-slate-200 rounded-xl mono font-bold text-center text-lg focus:border-[#E91E8C] outline-none transition-colors"
+              placeholder="Ejemplo: (p ∧ q) → p"
+              value="(p ∧ q) → p"
+              aria-describedby="formulaErrorMsg"
+            >
+            <!-- Indicador visual de validez (✓ / ✗) -->
+            <span
+              id="formulaStatusIcon"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-base font-black opacity-0 pointer-events-none transition-opacity"
+              aria-hidden="true"
+            ></span>
+          </div>
+
+          <!-- Mensaje de error inline (DUA: sin alerts, sin popups) -->
+          <div
+            id="formulaErrorBox"
+            class="hidden mt-2 p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700 font-semibold flex items-start gap-1.5"
+            role="alert"
+            aria-live="polite"
+          >
+            <span aria-hidden="true">⚠️</span>
+            <span id="formulaErrorMsg"></span>
+          </div>
+
+          <!-- Botones Rápidos para añadir operadores -->
           <div class="grid grid-cols-5 gap-1 mt-2">
-            <button onclick="insertAtInput('~')" class="p-2 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono" title="Negación">¬</button>
-            <button onclick="insertAtInput('&')" class="p-2 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono" title="Conjunción">∧</button>
-            <button onclick="insertAtInput('|')" class="p-2 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono" title="Disyunción">∨</button>
-            <button onclick="insertAtInput('>')" class="p-2 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono" title="Condicional">→</button>
-            <button onclick="insertAtInput('=')" class="p-2 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono" title="Bicondicional">↔</button>
+            <button onclick="insertAtInput('¬')" class="p-2 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono" title="Negación">¬</button>
+            <button onclick="insertAtInput('∧')" class="p-2 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono" title="Conjunción">∧</button>
+            <button onclick="insertAtInput('∨')" class="p-2 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono" title="Disyunción">∨</button>
+            <button onclick="insertAtInput('→')" class="p-2 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono" title="Condicional">→</button>
+            <button onclick="insertAtInput('↔')" class="p-2 bg-slate-100 hover:bg-purple-100 rounded-lg text-xs font-bold mono" title="Bicondicional">↔</button>
           </div>
 
           <button onclick="startActivity()" class="w-full mt-4 bg-[#E91E8C] hover:bg-[#C2185B] text-white py-3 px-4 rounded-xl font-bold text-sm tracking-wide transition shadow-sm">
@@ -112,7 +145,7 @@
         </div>
       </div>
 
-      <!-- Card 2: Guía de Referencia Rápida (Soporte DUA) -->
+      <!-- Card 2: Guía de Referencia Rápida -->
       <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
         <h2 class="text-base font-bold text-[#3B1F6E] mb-3 flex items-center gap-2">
           <span>📖</span> Guía de Conectores Lógicos
@@ -142,10 +175,10 @@
       </div>
     </section>
 
-    <!-- PANEL DERECHO: Mesa de Trabajo Interactiva (Progresiva y guiada para TEA) -->
+    <!-- PANEL DERECHO: Mesa de Trabajo -->
     <section class="lg:col-span-8 flex flex-col gap-6">
-      
-      <!-- FASE A: HISTORIA FORMACIONAL (DESCOMPOSICIÓN PEDAGÓGICA) -->
+
+      <!-- FASE A: HISTORIA FORMACIONAL -->
       <div id="sectionFormationalHistory" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 step-transition hidden">
         <div class="flex justify-between items-start mb-4">
           <div>
@@ -154,13 +187,13 @@
           </div>
           <span class="text-3xl" aria-hidden="true">🧱</span>
         </div>
-        
+
         <p class="text-sm text-slate-600 mb-4">
-          Para resolver una tabla, debemos ir de lo más sencillo a lo más complejo. 
+          Para resolver una tabla, debemos ir de lo más sencillo a lo más complejo.
           Selecciona abajo la subfórmula correcta para agregar como siguiente columna en tu tabla de verdad.
         </p>
 
-        <!-- Selector de Nivel de Desafío (DUA - Flexibilidad cognitiva) -->
+        <!-- Selector de Nivel de Desafío -->
         <div class="mb-5">
           <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nivel de Desafío de Construcción:</p>
           <div class="flex bg-slate-100 p-1 rounded-xl max-w-xs border border-slate-200">
@@ -173,21 +206,16 @@
           </div>
         </div>
 
-        <!-- Visualización del avance del árbol / columnas actuales -->
+        <!-- Columnas actuales -->
         <div class="mb-6">
           <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Columnas actuales en tu tabla:</p>
-          <div id="containerActiveColumns" class="flex flex-wrap gap-2">
-            <!-- Se inyectarán dinámicamente las columnas actuales -->
-          </div>
+          <div id="containerActiveColumns" class="flex flex-wrap gap-2"></div>
         </div>
 
-        <!-- Opciones disponibles (Calculadas pedagógicamente) -->
+        <!-- Opciones disponibles -->
         <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
           <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">¿Cuál es la siguiente columna que podemos calcular?</p>
-          <div id="containerSubformulaOptions" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <!-- Se inyectan las opciones dinámicas de selección interactiva -->
-          </div>
-          <!-- Mensaje explicativo y detallado amigable para TEA (DUA) -->
+          <div id="containerSubformulaOptions" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
           <div id="feedbackHistory" class="mt-4 p-4 rounded-xl text-sm font-semibold transition-all hidden"></div>
         </div>
       </div>
@@ -199,36 +227,25 @@
             <span class="bg-[#E91E8C]/10 text-[#E91E8C] text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Fase de Resolución</span>
             <h2 class="text-xl font-black mt-1 text-slate-800">Completa la Tabla de Verdad</h2>
           </div>
-          <!-- Ayuda visual: Mostrar fórmula actual -->
-          <div class="bg-[#3B1F6E] text-white px-4 py-2 rounded-xl text-center font-bold text-sm mono" id="displayFormulaActive">
-            --
-          </div>
+          <div class="bg-[#3B1F6E] text-white px-4 py-2 rounded-xl text-center font-bold text-sm mono" id="displayFormulaActive">--</div>
         </div>
 
         <p class="text-sm text-slate-600 mb-4">
-          Haz clic o toca las celdas vacías para rellenarlas con <span class="font-bold text-emerald-600">V (True)</span> o <span class="font-bold text-rose-600">F (False)</span>. 
+          Haz clic o toca las celdas vacías para rellenarlas con <span class="font-bold text-emerald-600">V (True)</span> o <span class="font-bold text-rose-600">F (False)</span>.
           Si necesitas ayuda, consulta la guía de la izquierda.
         </p>
 
-        <!-- Contenedor Responsivo de la Tabla de Verdad -->
         <div class="overflow-x-auto border border-slate-200 rounded-xl">
           <table class="w-full text-center border-collapse text-sm" id="interactiveTable">
             <thead>
-              <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200" id="tableHeaderRow">
-                <!-- Se inyecta dinámicamente -->
-              </tr>
+              <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200" id="tableHeaderRow"></tr>
             </thead>
-            <tbody class="mono" id="tableBody">
-              <!-- Se inyecta dinámicamente -->
-            </tbody>
+            <tbody class="mono" id="tableBody"></tbody>
           </table>
         </div>
 
-        <!-- Feedback de progreso de celdas -->
         <div class="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div class="text-sm text-slate-500 font-medium" id="txtCellCounter">
-            Celdas completadas: 0 / 0
-          </div>
+          <div class="text-sm text-slate-500 font-medium" id="txtCellCounter">Celdas completadas: 0 / 0</div>
           <div class="flex gap-2">
             <button onclick="checkTableAnswers()" class="px-5 py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl font-bold text-xs tracking-wider uppercase transition">
               Verificar Respuestas
@@ -239,11 +256,10 @@
           </div>
         </div>
 
-        <!-- Contenedor de Alerta DUA/TEA Visible para correcciones (Corregido) -->
         <div id="feedbackTable" class="mt-4 p-4 rounded-xl text-center font-bold hidden"></div>
       </div>
 
-      <!-- FASE C: CLASIFICACIÓN SEMÁFORO (DUA PRINCIPIO 3) -->
+      <!-- FASE C: CLASIFICACIÓN SEMÁFORO -->
       <div id="sectionClassification" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 step-transition hidden">
         <h2 class="text-lg font-bold text-[#3B1F6E] mb-2 flex items-center gap-2">
           <span>🚦</span> Paso Final: Semáforo de Clasificación
@@ -252,7 +268,6 @@
           ¡Felicidades, la tabla está completa! Ahora, analiza la última columna y clasifica la fórmula según sus resultados:
         </p>
 
-        <!-- Opciones de Semáforo Lógico -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button onclick="verifyClassification('tautology')" class="p-5 rounded-2xl border-2 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/30 text-left transition flex items-start gap-4">
             <span class="text-4xl">🟢</span>
@@ -285,14 +300,13 @@
     </section>
   </main>
 
-  <!-- Modal de felicitaciones (Sin popups intrusivos ni browser alerts, DUA/TEA amigable) -->
+  <!-- Modal de felicitaciones -->
   <div id="congratsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
     <div class="bg-white p-8 rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 text-center relative overflow-hidden">
       <div class="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
       <span class="text-6xl mb-4 block" aria-hidden="true">🎉🏆🎉</span>
       <h2 class="text-2xl font-black text-slate-800">¡Excelente Trabajo!</h2>
       <p class="text-slate-600 text-sm mt-2 mb-6" id="txtCongratsMessage">¡Has resuelto la tabla de verdad y clasificado la fórmula de manera perfecta!</p>
-      
       <div class="flex flex-col gap-2">
         <button onclick="closeCongratsModal()" class="w-full bg-[#E91E8C] hover:bg-[#C2185B] text-white font-bold py-3 px-4 rounded-xl text-sm transition shadow-md">
           Siguiente Ejercicio
@@ -301,7 +315,6 @@
     </div>
   </div>
 
-  <!-- Pie de página informativo -->
   <footer class="bg-slate-100 border-t border-slate-200 py-6 text-center text-xs text-slate-500">
     <div class="max-w-6xl mx-auto px-4">
       <p>LogiFlex fue diseñado siguiendo las Pautas de Diseño Universal para el Aprendizaje (DUA) con el fin de proporcionar múltiples medios de compromiso y representación.</p>
@@ -309,100 +322,196 @@
     </div>
   </footer>
 
-  <!-- SCRIPT LÓGICO / PARSER Y MOTOR PEDAGÓGICO -->
   <script>
-    // Configuración de Estados de la Aplicación
+    // ─── Estado de la Aplicación ───────────────────────────────────────────────
     let appState = {
-      representationMode: 'traditional', // 'traditional' (∧, ∨, ¬) o 'programming' (AND, OR, NOT)
-      challengeLevel: 'easy', // 'easy' (Nivel 1: Asistido) o 'hard' (Nivel 2: Desafío completo)
+      representationMode: 'traditional',
+      challengeLevel: 'easy',
       formulaRaw: '',
       formulaNormalized: '',
       variables: [],
-      subformulas: [], // Colección ordenada de subfórmulas
-      activeColumns: [], // Columnas actualmente colocadas en la mesa por el estudiante
-      tableValues: [], // Array de arrays con los valores correspondientes a cada fila
-      studentInput: {}, // Almacena el valor de las celdas ingresados por el estudiante: "filaIndex_colIndex" -> 'V'|'F'
+      subformulas: [],
+      activeColumns: [],
+      tableValues: [],
+      studentInput: {},
     };
 
-    // Símbolos lógicos según modo
     const representationMapping = {
-      traditional: {
-        '~': '¬',
-        '&': ' ∧ ',
-        '|': ' ∨ ',
-        '>': ' → ',
-        '=': ' ↔ ',
-        'V': 'V',
-        'F': 'F'
-      },
-      programming: {
-        '~': 'NOT ',
-        '&': ' AND ',
-        '|': ' OR ',
-        '>': ' THEN ',
-        '=': ' IFF ',
-        'V': 'True',
-        'F': 'False'
-      }
+      traditional: { '~': '¬', '&': ' ∧ ', '|': ' ∨ ', '>': ' → ', '=': ' ↔ ', 'V': 'V', 'F': 'F' },
+      programming:  { '~': 'NOT ', '&': ' AND ', '|': ' OR ', '>': ' THEN ', '=': ' IFF ', 'V': 'True', 'F': 'False' }
     };
 
-    // Al iniciar la página
-    window.onload = function() {
-      startActivity();
-    };
+    window.onload = function() { startActivity(); };
 
-    function setRepresentationMode(mode) {
-      appState.representationMode = mode;
-      
-      const btnTrad = document.getElementById('btnModeTraditional');
-      const btnProg = document.getElementById('btnModeProgramming');
-      if (mode === 'traditional') {
-        btnTrad.className = "px-4 py-1.5 rounded-lg text-sm font-bold transition-all bg-[#E91E8C] text-white";
-        btnProg.className = "px-4 py-1.5 rounded-lg text-sm font-bold transition-all text-purple-200 hover:text-white";
-      } else {
-        btnProg.className = "px-4 py-1.5 rounded-lg text-sm font-bold transition-all bg-[#E91E8C] text-white";
-        btnTrad.className = "px-4 py-1.5 rounded-lg text-sm font-bold transition-all text-purple-200 hover:text-white";
+
+    // ─── VALIDACIÓN DE FÓRMULA ────────────────────────────────────────────────
+    // Recibe la cadena ya normalizada por parseFormula() (mayúsculas, operadores ASCII).
+    function isValidFormula(normalized) {
+      const s = normalized.trim();
+
+      if (!s)
+        return { valid: false, msg: 'Escribe una fórmula antes de iniciar la actividad.' };
+
+      // Solo se permiten letras (variables), operadores y paréntesis
+      if (!/^[A-Z~&|>=()]+$/.test(s))
+        return { valid: false, msg: 'Caracteres no permitidos. Usá variables (p, q, r…) y los conectores del teclado lógico.' };
+
+      // Paréntesis vacíos
+      if (/\(\)/.test(s))
+        return { valid: false, msg: 'Hay paréntesis vacíos ().' };
+
+      // Debe haber al menos una variable
+      if (!/[A-Z]/.test(s))
+        return { valid: false, msg: 'La fórmula necesita al menos una variable (p, q, r…).' };
+
+      // No puede empezar con operador binario
+      if (/^[&|>=]/.test(s))
+        return { valid: false, msg: 'La fórmula no puede empezar con un operador binario (∧ ∨ → ↔).' };
+
+      // No puede terminar con ningún operador
+      if (/[~&|>=]$/.test(s))
+        return { valid: false, msg: 'La fórmula no puede terminar con un operador.' };
+
+      // Dos operadores binarios seguidos
+      if (/[&|>=]{2,}/.test(s))
+        return { valid: false, msg: 'Dos operadores binarios seguidos — falta una variable entre ellos.' };
+
+      // Dos variables seguidas sin operador
+      if (/[A-Z][A-Z]/.test(s))
+        return { valid: false, msg: 'Dos variables seguidas — falta un operador entre ellas.' };
+
+      // Variable seguida de ( sin operador
+      if (/[A-Z]\(/.test(s))
+        return { valid: false, msg: 'Falta un operador entre la variable y el paréntesis.' };
+
+      // ) seguido de variable sin operador
+      if (/\)[A-Z]/.test(s))
+        return { valid: false, msg: 'Falta un operador después del paréntesis de cierre.' };
+
+      // ) seguido de ( sin operador
+      if (/\)\(/.test(s))
+        return { valid: false, msg: 'Falta un operador entre los dos grupos de paréntesis.' };
+
+      // ) seguido de ~ sin operador
+      if (/\)~/.test(s))
+        return { valid: false, msg: 'Falta un operador entre el paréntesis de cierre y la negación.' };
+
+      // Operador binario justo antes de )
+      if (/[&|>=]\)/.test(s))
+        return { valid: false, msg: 'Un operador binario no puede ir justo antes del paréntesis de cierre.' };
+
+      // Operador binario justo después de (
+      if (/\([&|>=]/.test(s))
+        return { valid: false, msg: 'El paréntesis no puede abrirse directamente con un operador binario.' };
+
+      // Paréntesis balanceados
+      let balance = 0;
+      for (const char of s) {
+        if (char === '(') balance++;
+        if (char === ')') balance--;
+        if (balance < 0)
+          return { valid: false, msg: 'Hay un paréntesis de cierre sin su correspondiente apertura.' };
       }
+      if (balance > 0)
+        return { valid: false, msg: `Faltan ${balance} paréntesis de cierre.` };
 
-      updateInteractiveView();
+      return { valid: true, msg: '' };
     }
 
-    function setChallengeLevel(level) {
-      appState.challengeLevel = level;
+    // ─── Helpers de UI para validación ────────────────────────────────────────
 
-      const btnEasy = document.getElementById('btnLevelEasy');
-      const btnHard = document.getElementById('btnLevelHard');
-      if (level === 'easy') {
-        btnEasy.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all bg-[#3B1F6E] text-white";
-        btnHard.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-[#3B1F6E]";
-      } else {
-        btnHard.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all bg-[#3B1F6E] text-white";
-        btnEasy.className = "flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-[#3B1F6E]";
-      }
-
-      // Reiniciar retroalimentación de historia al cambiar de modo
-      const fbHistory = document.getElementById('feedbackHistory');
-      if (fbHistory) fbHistory.classList.add('hidden');
-
-      updateInteractiveView();
-    }
-
-    function selectPreset(formula) {
-      document.getElementById('inputFormula').value = formula;
-      startActivity();
-    }
-
-    function insertAtInput(char) {
+    function showFormulaError(msg) {
+      const box   = document.getElementById('formulaErrorBox');
+      const msgEl = document.getElementById('formulaErrorMsg');
+      const icon  = document.getElementById('formulaStatusIcon');
       const input = document.getElementById('inputFormula');
-      const start = input.selectionStart;
-      const end = input.selectionEnd;
-      const text = input.value;
-      input.value = text.substring(0, start) + char + text.substring(end);
-      input.focus();
-      input.setSelectionRange(start + 1, start + 1);
+
+      msgEl.textContent = msg;
+      box.classList.remove('hidden');
+      icon.textContent  = '✗';
+      icon.className    = 'absolute right-3 top-1/2 -translate-y-1/2 text-base font-black text-rose-500 opacity-100 pointer-events-none transition-opacity';
+      input.classList.remove('border-slate-200', 'border-emerald-400');
+      input.classList.add('border-rose-400');
+
+      // Efecto shake para llamar la atención (DUA: señal visual clara)
+      input.classList.add('shake');
+      input.addEventListener('animationend', () => input.classList.remove('shake'), { once: true });
     }
 
-    // --- PARSER DE PROPOSICIONES LÓGICAS ---
+    function hideFormulaError() {
+      document.getElementById('formulaErrorBox').classList.add('hidden');
+      document.getElementById('formulaErrorMsg').textContent = '';
+    }
+
+    function showFormulaOK() {
+      const icon  = document.getElementById('formulaStatusIcon');
+      const input = document.getElementById('inputFormula');
+      hideFormulaError();
+      icon.textContent = '✓';
+      icon.className   = 'absolute right-3 top-1/2 -translate-y-1/2 text-base font-black text-emerald-600 opacity-100 pointer-events-none transition-opacity';
+      input.classList.remove('border-slate-200', 'border-rose-400');
+      input.classList.add('border-emerald-400');
+    }
+
+    function resetFormulaStatus() {
+      const icon  = document.getElementById('formulaStatusIcon');
+      const input = document.getElementById('inputFormula');
+      hideFormulaError();
+      icon.className = 'absolute right-3 top-1/2 -translate-y-1/2 text-base font-black opacity-0 pointer-events-none transition-opacity';
+      input.classList.remove('border-rose-400', 'border-emerald-400');
+      input.classList.add('border-slate-200');
+    }
+
+    // Convierte operadores ASCII internos a símbolos propios para mostrar en el input
+    function toDisplayFormula(s) {
+      return s
+        .replace(/~/g, '¬')
+        .replace(/&/g, '∧')
+        .replace(/\|/g, '∨')
+        .replace(/>/g, '→')
+        .replace(/=/g, '↔');
+    }
+
+    // Filtra caracteres no permitidos del input (letras, símbolos lógicos y paréntesis)
+    function sanitizeFormulaInput() {
+      const input  = document.getElementById('inputFormula');
+      const before = input.value;
+      const pos    = input.selectionStart;
+      const cleaned = before.replace(/[^a-zA-Z¬∧∨→↔()\s]/g, '');
+      if (cleaned !== before) {
+        input.value = cleaned;
+        const newPos = Math.min(pos, cleaned.length);
+        input.setSelectionRange(newPos, newPos);
+      }
+    }
+
+    // Validación en tiempo real mientras el usuario escribe
+    function onFormulaInput() {
+      sanitizeFormulaInput();
+      const raw = document.getElementById('inputFormula').value;
+      if (!raw.trim()) { resetFormulaStatus(); return; }
+
+      const { normalized } = parseFormula(raw);
+      const { valid }      = isValidFormula(normalized);
+      const icon           = document.getElementById('formulaStatusIcon');
+      const input          = document.getElementById('inputFormula');
+
+      if (valid) {
+        showFormulaOK();
+      } else {
+        // Mientras se escribe: solo muestra el ✗ en el icono, sin el texto de error
+        // (el texto completo aparece al presionar "Iniciar Actividad")
+        hideFormulaError();
+        icon.textContent = '✗';
+        icon.className   = 'absolute right-3 top-1/2 -translate-y-1/2 text-base font-black text-rose-500 opacity-100 pointer-events-none transition-opacity';
+        input.classList.remove('border-slate-200', 'border-emerald-400');
+        input.classList.add('border-rose-400');
+      }
+    }
+
+
+    // ─── PARSER ───────────────────────────────────────────────────────────────
+
     function parseFormula(raw) {
       let s = raw.toUpperCase()
         .replace(/\s+/g, '')
@@ -414,127 +523,52 @@
         .replace(/<->/g, '=').replace(/->/g, '>');
 
       const varsSet = new Set();
-      for (let char of s) {
-        if (/[P-Z]/.test(char)) {
-          varsSet.add(char.toLowerCase());
-        }
-      }
-      const vars = Array.from(varsSet).sort();
-
-      return {
-        variables: vars,
-        normalized: s
-      };
-    }
-
-    function calculateFormationalHistory(formulaStr) {
-      const subfs = new Set();
-
-      function getSubformulasRecursive(expr) {
-        expr = cleanParentheses(expr);
-        if (!expr) return;
-        
-        if (expr.length === 1 && /[p-z]/.test(expr)) {
-          subfs.add(expr);
-          return;
-        }
-
-        let mainOpIdx = findMainOperator(expr);
-        if (mainOpIdx !== -1) {
-          subfs.add(expr);
-          let op = expr[mainOpIdx];
-          if (op === '~') {
-            getSubformulasRecursive(expr.slice(mainOpIdx + 1));
-          } else {
-            getSubformulasRecursive(expr.slice(0, mainOpIdx));
-            getSubformulasRecursive(expr.slice(mainOpIdx + 1));
-          }
-        } else {
-          if (expr.startsWith('~')) {
-            subfs.add(expr);
-            getSubformulasRecursive(expr.slice(1));
-          } else {
-            subfs.add(expr);
-          }
-        }
+      for (const char of s) {
+        if (/[P-Z]/.test(char)) varsSet.add(char.toLowerCase());
       }
 
-      getSubformulasRecursive(formulaStr.toLowerCase());
-
-      let list = Array.from(subfs).sort((a, b) => {
-        const scoreA = a.length + (a.includes('~') ? 1 : 0) * 0.5;
-        const bgA = (a.includes('&')||a.includes('|')||a.includes('>')||a.includes('=')) ? 2 : 1;
-        const scoreB = b.length + (b.includes('~') ? 1 : 0) * 0.5;
-        const bgB = (b.includes('&')||b.includes('|')||b.includes('>')||b.includes('=')) ? 2 : 1;
-        return (scoreA * bgA) - (scoreB * bgB);
-      });
-
-      return list;
+      return { variables: Array.from(varsSet).sort(), normalized: s };
     }
 
-    function cleanParentheses(expr) {
-      expr = expr.trim();
-      while (expr.startsWith('(') && expr.endsWith(')')) {
-        let depth = 0;
-        let match = true;
-        for (let i = 0; i < expr.length - 1; i++) {
-          if (expr[i] === '(') depth++;
-          if (expr[i] === ')') depth--;
-          if (depth === 0) {
-            match = false;
-            break;
-          }
-        }
-        if (match) {
-          expr = expr.slice(1, -1).trim();
-        } else {
-          break;
-        }
-      }
-      return expr;
-    }
 
-    function findMainOperator(expr) {
-      let depth = 0;
-      let ops = { '=': 1, '>': 2, '|': 3, '&': 4 };
-      let lowestPrec = Infinity;
-      let mainOpIdx = -1;
+    // ─── INICIAR ACTIVIDAD ────────────────────────────────────────────────────
 
-      for (let i = 0; i < expr.length; i++) {
-        let char = expr[i];
-        if (char === '(') depth++;
-        else if (char === ')') depth--;
-        else if (depth === 0 && ops[char] !== undefined) {
-          let prec = ops[char];
-          if (prec <= lowestPrec) {
-            lowestPrec = prec;
-            mainOpIdx = i;
-          }
-        }
-      }
-      return mainOpIdx;
-    }
-
-    // --- INICIALIZAR ACTIVIDAD ---
     function startActivity() {
       const raw = document.getElementById('inputFormula').value;
-      if (!raw.trim()) return;
 
-      const parsed = parseFormula(raw);
-      appState.formulaRaw = raw;
+      if (!raw.trim()) {
+        showFormulaError('Escribe una fórmula antes de iniciar la actividad.');
+        return;
+      }
+
+      const parsed     = parseFormula(raw);
+      const validation = isValidFormula(parsed.normalized);
+
+      if (!validation.valid) {
+        showFormulaError(validation.msg);
+        return;
+      }
+
+      if (parsed.variables.length === 0) {
+        showFormulaError('La fórmula debe contener variables (p, q, r…) entre las letras p–z.');
+        return;
+      }
+
+      showFormulaOK();
+
+      appState.formulaRaw        = raw;
       appState.formulaNormalized = parsed.normalized;
-      appState.variables = parsed.variables;
+      appState.variables         = parsed.variables;
 
-      let calculatedHist = calculateFormationalHistory(parsed.normalized);
-      appState.subformulas = calculatedHist;
-
+      const calculatedHist = calculateFormationalHistory(parsed.normalized);
+      appState.subformulas  = calculatedHist;
       appState.activeColumns = [...appState.variables];
-      appState.studentInput = {};
+      appState.studentInput  = {};
 
       document.getElementById('sectionFormationalHistory').classList.remove('hidden');
       document.getElementById('sectionTruthTable').classList.add('hidden');
       document.getElementById('sectionClassification').classList.add('hidden');
-      
+
       const fbTable = document.getElementById('feedbackTable');
       fbTable.classList.add('hidden');
       fbTable.innerHTML = '';
@@ -546,7 +580,125 @@
       updateInteractiveView();
     }
 
-    // --- ACTUALIZAR LA VISTA INTERACTIVA SEGÚN NIVEL DE DESAFÍO (DUA) ---
+    function selectPreset(formula) {
+      document.getElementById('inputFormula').value = toDisplayFormula(formula);
+      resetFormulaStatus();
+      startActivity();
+    }
+
+
+    // ─── MODOS DE REPRESENTACIÓN Y DESAFÍO ───────────────────────────────────
+
+    function setRepresentationMode(mode) {
+      appState.representationMode = mode;
+      const btnTrad = document.getElementById('btnModeTraditional');
+      const btnProg = document.getElementById('btnModeProgramming');
+      if (mode === 'traditional') {
+        btnTrad.className = 'px-4 py-1.5 rounded-lg text-sm font-bold transition-all bg-[#E91E8C] text-white';
+        btnProg.className = 'px-4 py-1.5 rounded-lg text-sm font-bold transition-all text-purple-200 hover:text-white';
+      } else {
+        btnProg.className = 'px-4 py-1.5 rounded-lg text-sm font-bold transition-all bg-[#E91E8C] text-white';
+        btnTrad.className = 'px-4 py-1.5 rounded-lg text-sm font-bold transition-all text-purple-200 hover:text-white';
+      }
+      updateInteractiveView();
+    }
+
+    function setChallengeLevel(level) {
+      appState.challengeLevel = level;
+      const btnEasy = document.getElementById('btnLevelEasy');
+      const btnHard = document.getElementById('btnLevelHard');
+      if (level === 'easy') {
+        btnEasy.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all bg-[#3B1F6E] text-white';
+        btnHard.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-[#3B1F6E]';
+      } else {
+        btnHard.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all bg-[#3B1F6E] text-white';
+        btnEasy.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-[#3B1F6E]';
+      }
+      const fbHistory = document.getElementById('feedbackHistory');
+      if (fbHistory) fbHistory.classList.add('hidden');
+      updateInteractiveView();
+    }
+
+    function insertAtInput(char) {
+      const input = document.getElementById('inputFormula');
+      const start = input.selectionStart;
+      const end   = input.selectionEnd;
+      input.value = input.value.substring(0, start) + char + input.value.substring(end);
+      input.focus();
+      input.setSelectionRange(start + 1, start + 1);
+      onFormulaInput();
+    }
+
+
+    // ─── HISTORIA FORMACIONAL ─────────────────────────────────────────────────
+
+    function calculateFormationalHistory(formulaStr) {
+      const subfs = new Set();
+
+      function getSubformulasRecursive(expr) {
+        expr = cleanParentheses(expr);
+        if (!expr) return;
+        if (expr.length === 1 && /[p-z]/.test(expr)) { subfs.add(expr); return; }
+
+        let mainOpIdx = findMainOperator(expr);
+        if (mainOpIdx !== -1) {
+          subfs.add(expr);
+          const op = expr[mainOpIdx];
+          if (op === '~') {
+            getSubformulasRecursive(expr.slice(mainOpIdx + 1));
+          } else {
+            getSubformulasRecursive(expr.slice(0, mainOpIdx));
+            getSubformulasRecursive(expr.slice(mainOpIdx + 1));
+          }
+        } else {
+          if (expr.startsWith('~')) { subfs.add(expr); getSubformulasRecursive(expr.slice(1)); }
+          else subfs.add(expr);
+        }
+      }
+
+      getSubformulasRecursive(formulaStr.toLowerCase());
+
+      return Array.from(subfs).sort((a, b) => {
+        const scoreA = a.length + (a.includes('~') ? 0.5 : 0);
+        const scoreB = b.length + (b.includes('~') ? 0.5 : 0);
+        const bgA = (a.includes('&') || a.includes('|') || a.includes('>') || a.includes('=')) ? 2 : 1;
+        const bgB = (b.includes('&') || b.includes('|') || b.includes('>') || b.includes('=')) ? 2 : 1;
+        return (scoreA * bgA) - (scoreB * bgB);
+      });
+    }
+
+    function cleanParentheses(expr) {
+      expr = expr.trim();
+      while (expr.startsWith('(') && expr.endsWith(')')) {
+        let depth = 0, match = true;
+        for (let i = 0; i < expr.length - 1; i++) {
+          if (expr[i] === '(') depth++;
+          if (expr[i] === ')') depth--;
+          if (depth === 0) { match = false; break; }
+        }
+        if (match) expr = expr.slice(1, -1).trim();
+        else break;
+      }
+      return expr;
+    }
+
+    function findMainOperator(expr) {
+      const ops = { '=': 1, '>': 2, '|': 3, '&': 4 };
+      let depth = 0, lowestPrec = Infinity, mainOpIdx = -1;
+      for (let i = 0; i < expr.length; i++) {
+        const char = expr[i];
+        if (char === '(') depth++;
+        else if (char === ')') depth--;
+        else if (depth === 0 && ops[char] !== undefined) {
+          if (ops[char] <= lowestPrec) { lowestPrec = ops[char]; mainOpIdx = i; }
+        }
+      }
+      return mainOpIdx;
+    }
+
+
+    // ─── VISTA INTERACTIVA ────────────────────────────────────────────────────
+
     function updateInteractiveView() {
       const displayFormula = translateFormula(appState.formulaNormalized);
       document.getElementById('displayFormulaActive').innerText = displayFormula;
@@ -555,7 +707,7 @@
       containerActive.innerHTML = '';
       appState.activeColumns.forEach(col => {
         const span = document.createElement('span');
-        span.className = "px-3 py-1.5 bg-purple-100 text-[#3B1F6E] rounded-xl font-bold border border-purple-200 text-xs mono flex items-center gap-1.5 shadow-sm";
+        span.className = 'px-3 py-1.5 bg-purple-100 text-[#3B1F6E] rounded-xl font-bold border border-purple-200 text-xs mono flex items-center gap-1.5 shadow-sm';
         span.innerHTML = `<span>${translateFormula(col)}</span> <span class="text-emerald-600 text-xs font-black">✓</span>`;
         containerActive.appendChild(span);
       });
@@ -563,7 +715,7 @@
       const containerOptions = document.getElementById('containerSubformulaOptions');
       containerOptions.innerHTML = '';
 
-      let remaining = appState.subformulas.filter(f => !appState.activeColumns.includes(f));
+      const remaining = appState.subformulas.filter(f => !appState.activeColumns.includes(f));
 
       if (remaining.length === 0) {
         containerOptions.innerHTML = `
@@ -574,108 +726,79 @@
         `;
         showTruthTableResolution();
       } else {
-        let resolubles = remaining.filter(f => isResolvableWith(f, appState.activeColumns));
-        let noResolubles = remaining.filter(f => !resolubles.includes(f));
+        const resolubles   = remaining.filter(f =>  isResolvableWith(f, appState.activeColumns));
+        const noResolubles = remaining.filter(f => !isResolvableWith(f, appState.activeColumns));
 
         if (appState.challengeLevel === 'easy') {
-          // NIVEL 1 (ASISTIDO): Solo mostrar subfórmulas listas de forma directa
           resolubles.forEach(f => {
             const btn = document.createElement('button');
             btn.onclick = () => {
               addSubformulaToTable(f);
               const fbHistory = document.getElementById('feedbackHistory');
-              fbHistory.className = "mt-4 p-4 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 block";
+              fbHistory.className = 'mt-4 p-4 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 block';
               fbHistory.innerHTML = `🌟 ¡Agregado! <code>${translateFormula(f)}</code> se ha incorporado a tu tabla.`;
               setTimeout(() => fbHistory.classList.add('hidden'), 1500);
             };
-            btn.className = "p-4 bg-white hover:bg-purple-50 border-2 border-slate-200 hover:border-purple-500 rounded-xl font-bold text-sm text-left transition mono flex justify-between items-center w-full shadow-sm";
-            btn.innerHTML = `
-              <span>${translateFormula(f)}</span>
-              <span class="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-lg font-bold">Añadir +</span>
-            `;
+            btn.className = 'p-4 bg-white hover:bg-purple-50 border-2 border-slate-200 hover:border-purple-500 rounded-xl font-bold text-sm text-left transition mono flex justify-between items-center w-full shadow-sm';
+            btn.innerHTML = `<span>${translateFormula(f)}</span><span class="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-lg font-bold">Añadir +</span>`;
             containerOptions.appendChild(btn);
           });
         } else {
-          // NIVEL 2 (DESAFÍO): Mezcla de correctas e incorrectas
-          let optionsToShow = [];
-          resolubles.forEach(f => {
-            optionsToShow.push({ formula: f, isCorrect: true, reason: 'ready' });
-          });
-          noResolubles.forEach(f => {
-            optionsToShow.push({ formula: f, isCorrect: false, reason: 'not_ready' });
-          });
-
-          // Ordenar por longitud de forma estructurada
-          optionsToShow.sort((a, b) => a.formula.length - b.formula.length);
+          const optionsToShow = [
+            ...resolubles.map(f  => ({ formula: f, isCorrect: true })),
+            ...noResolubles.map(f => ({ formula: f, isCorrect: false }))
+          ].sort((a, b) => a.formula.length - b.formula.length);
 
           optionsToShow.forEach((opt, index) => {
             const btn = document.createElement('button');
-            btn.id = `btnHistOpt_${index}`;
+            btn.id      = `btnHistOpt_${index}`;
             btn.onclick = () => selectFormationalOption(opt, index);
-            btn.className = "p-4 bg-white hover:bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-left transition mono flex justify-between items-center w-full shadow-sm";
-            btn.innerHTML = `
-              <span>${translateFormula(opt.formula)}</span>
-              <span class="text-xs text-slate-400 font-bold bg-slate-100 px-2 py-1 rounded-lg">Opción ${index + 1}</span>
-            `;
+            btn.className = 'p-4 bg-white hover:bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-left transition mono flex justify-between items-center w-full shadow-sm';
+            btn.innerHTML = `<span>${translateFormula(opt.formula)}</span><span class="text-xs text-slate-400 font-bold bg-slate-100 px-2 py-1 rounded-lg">Opción ${index + 1}</span>`;
             containerOptions.appendChild(btn);
           });
         }
       }
 
       document.querySelectorAll('.op-disp').forEach(el => {
-        const symbol = el.getAttribute('data-symbol');
-        el.innerText = translateOperator(symbol);
+        el.innerText = translateOperator(el.getAttribute('data-symbol'));
       });
     }
 
-    // --- MANEJAR SELECCIÓN DE LA HISTORIA FORMACIONAL CON EXPLICACIÓN ---
     function selectFormationalOption(option, index) {
       const fbHistory = document.getElementById('feedbackHistory');
       fbHistory.classList.remove('hidden');
 
-      const buttons = document.querySelectorAll('[id^="btnHistOpt_"]');
-      buttons.forEach(btn => {
-        btn.className = btn.className.replace(/\s*border-(emerald|rose|amber)-\d+/g, "");
-        btn.className = btn.className.replace(/\s*bg-(emerald|rose|amber)-\d+/g, "");
+      document.querySelectorAll('[id^="btnHistOpt_"]').forEach(btn => {
+        btn.className = btn.className.replace(/\s*border-(emerald|rose|amber)-\d+/g, '').replace(/\s*bg-(emerald|rose|amber)-\d+/g, '');
       });
 
       const selectedBtn = document.getElementById(`btnHistOpt_${index}`);
 
       if (option.isCorrect) {
-        selectedBtn.className += " border-emerald-500 bg-emerald-50/50 text-emerald-900";
-        fbHistory.className = "mt-4 p-4 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 block";
-        fbHistory.innerHTML = `🌟 <strong>¡Excelente elección!</strong> La subfórmula <code>${translateFormula(option.formula)}</code> está lista para calcularse porque ya conocemos todas sus variables constituyentes. ¡Siguiente paso!`;
-        
-        setTimeout(() => {
-          addSubformulaToTable(option.formula);
-          fbHistory.classList.add('hidden');
-        }, 1200);
-
+        selectedBtn.className += ' border-emerald-500 bg-emerald-50/50 text-emerald-900';
+        fbHistory.className    = 'mt-4 p-4 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 block';
+        fbHistory.innerHTML    = `🌟 <strong>¡Excelente elección!</strong> La subfórmula <code>${translateFormula(option.formula)}</code> está lista para calcularse. ¡Siguiente paso!`;
+        setTimeout(() => { addSubformulaToTable(option.formula); fbHistory.classList.add('hidden'); }, 1200);
       } else {
-        selectedBtn.className += " border-rose-400 bg-rose-50/50 text-rose-900";
-        fbHistory.className = "mt-4 p-4 rounded-xl text-sm font-semibold bg-rose-50 text-rose-800 border border-rose-200 block";
-
-        let missingParts = getMissingComponents(option.formula, appState.activeColumns);
-        let missingStr = missingParts.map(p => `<strong>${translateFormula(p)}</strong>`).join(" y ");
-
-        fbHistory.innerHTML = `⚠️ <strong>Todavía no podemos resolver esa:</strong> Para poder calcular <code>${translateFormula(option.formula)}</code>, primero necesitas haber colocado en la tabla las columnas de sus partes internas. <br><br>👉 Falta añadir primero: ${missingStr}.`;
+        selectedBtn.className += ' border-rose-400 bg-rose-50/50 text-rose-900';
+        fbHistory.className    = 'mt-4 p-4 rounded-xl text-sm font-semibold bg-rose-50 text-rose-800 border border-rose-200 block';
+        const missingParts = getMissingComponents(option.formula, appState.activeColumns);
+        const missingStr   = missingParts.map(p => `<strong>${translateFormula(p)}</strong>`).join(' y ');
+        fbHistory.innerHTML = `⚠️ <strong>Todavía no podemos resolver esa:</strong> Para calcular <code>${translateFormula(option.formula)}</code>, primero necesitás las columnas de sus partes internas.<br><br>👉 Falta añadir primero: ${missingStr}.`;
       }
     }
 
     function getMissingComponents(f, activeList) {
       f = cleanParentheses(f);
-      let missing = [];
-      let mainOpIdx = findMainOperator(f);
-      
+      const missing     = [];
+      const mainOpIdx   = findMainOperator(f);
       if (mainOpIdx === -1) {
-        if (f.startsWith('~')) {
-          let inner = f.slice(1);
-          if (!activeList.includes(inner)) missing.push(inner);
-        }
+        if (f.startsWith('~')) { const inner = f.slice(1); if (!activeList.includes(inner)) missing.push(inner); }
       } else {
-        let left = cleanParentheses(f.slice(0, mainOpIdx));
-        let right = cleanParentheses(f.slice(mainOpIdx + 1));
-        if (!activeList.includes(left)) missing.push(left);
+        const left  = cleanParentheses(f.slice(0, mainOpIdx));
+        const right = cleanParentheses(f.slice(mainOpIdx + 1));
+        if (!activeList.includes(left))  missing.push(left);
         if (!activeList.includes(right)) missing.push(right);
       }
       return missing;
@@ -683,17 +806,13 @@
 
     function isResolvableWith(f, activeList) {
       f = cleanParentheses(f);
-      let mainOpIdx = findMainOperator(f);
+      const mainOpIdx = findMainOperator(f);
       if (mainOpIdx === -1) {
-        if (f.startsWith('~')) {
-          let inner = f.slice(1);
-          return activeList.includes(inner);
-        }
+        if (f.startsWith('~')) return activeList.includes(f.slice(1));
         return false;
       }
-      let left = cleanParentheses(f.slice(0, mainOpIdx));
-      let right = cleanParentheses(f.slice(mainOpIdx + 1));
-      return activeList.includes(left) && activeList.includes(right);
+      return activeList.includes(cleanParentheses(f.slice(0, mainOpIdx))) &&
+             activeList.includes(cleanParentheses(f.slice(mainOpIdx + 1)));
     }
 
     function addSubformulaToTable(f) {
@@ -703,23 +822,22 @@
       }
     }
 
-    // --- ENTRAR A LA FASE DE RESOLVER TABLA ---
+
+    // ─── TABLA DE VERDAD ──────────────────────────────────────────────────────
+
     function showTruthTableResolution() {
       document.getElementById('sectionTruthTable').classList.remove('hidden');
       buildTruthTableDOM();
     }
 
     function translateFormula(f) {
-      let result = f;
-      const mode = appState.representationMode;
-      const map = representationMapping[mode];
-
-      result = result.replace(/~/g, map['~']);
-      result = result.replace(/&/g, map['&']);
-      result = result.replace(/\|/g, map['|']);
-      result = result.replace(/>/g, map['>']);
-      result = result.replace(/=/g, map['=']);
-
+      const map = representationMapping[appState.representationMode];
+      let result = f
+        .replace(/~/g, map['~'])
+        .replace(/&/g, map['&'])
+        .replace(/\|/g, map['|'])
+        .replace(/>/g, map['>'])
+        .replace(/=/g, map['=']);
       return result.toUpperCase();
     }
 
@@ -727,70 +845,57 @@
       return representationMapping[appState.representationMode][op].trim();
     }
 
-    // --- CONSTRUIR LA TABLA DE VERDAD INTERACTIVA EN EL DOM ---
     function buildTruthTableDOM() {
       const vars = appState.variables;
       const cols = appState.activeColumns;
 
-      // 1. Generar Encabezado
       const headerRow = document.getElementById('tableHeaderRow');
       headerRow.innerHTML = '';
       cols.forEach((col, idx) => {
         const th = document.createElement('th');
-        th.className = "p-3 border border-slate-200 text-xs sm:text-sm tracking-wider font-extrabold text-slate-700 " + 
-                     (idx === cols.length - 1 ? "bg-purple-100 text-[#3B1F6E] border-b-2 border-purple-400" : "");
+        th.className = 'p-3 border border-slate-200 text-xs sm:text-sm tracking-wider font-extrabold text-slate-700' +
+          (idx === cols.length - 1 ? ' bg-purple-100 text-[#3B1F6E] border-b-2 border-purple-400' : '');
         th.innerText = translateFormula(col);
         headerRow.appendChild(th);
       });
 
-      // 2. Generar Combinaciones de Filas (Interpretaciones 2^n)
-      const numRows = Math.pow(2, vars.length);
+      const numRows  = Math.pow(2, vars.length);
       const tableBody = document.getElementById('tableBody');
       tableBody.innerHTML = '';
-
       appState.tableValues = [];
 
       for (let r = 0; r < numRows; r++) {
         const rowData = {};
         vars.forEach((v, vIdx) => {
-          const divisor = Math.pow(2, vars.length - vIdx - 1);
-          rowData[v] = (Math.floor(r / divisor) % 2 === 0) ? 'V' : 'F';
+          rowData[v] = (Math.floor(r / Math.pow(2, vars.length - vIdx - 1)) % 2 === 0) ? 'V' : 'F';
         });
-
-        cols.forEach(col => {
-          if (!vars.includes(col)) {
-            rowData[col] = evaluateExpression(col, rowData);
-          }
-        });
-
+        cols.forEach(col => { if (!vars.includes(col)) rowData[col] = evaluateExpression(col, rowData); });
         appState.tableValues.push(rowData);
 
-        // Renderizar la fila del DOM
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 border-b border-slate-200 transition-colors";
+        tr.className = 'hover:bg-slate-50 border-b border-slate-200 transition-colors';
 
         cols.forEach((col, cIdx) => {
           const td = document.createElement('td');
-          td.className = "p-2 border border-slate-200";
+          td.className = 'p-2 border border-slate-200';
 
           if (vars.includes(col)) {
             const val = rowData[col];
-            td.className += val === 'V' ? " text-emerald-600 font-bold" : " text-rose-500 font-bold";
-            td.innerText = translateVal(val);
+            td.className += val === 'V' ? ' text-emerald-600 font-bold' : ' text-rose-500 font-bold';
+            td.innerText  = translateVal(val);
           } else {
-            const cellKey = `${r}_${cIdx}`;
-            const stValue = appState.studentInput[cellKey] || '';
-
+            const stValue = appState.studentInput[`${r}_${cIdx}`] || '';
             td.innerHTML = `
               <div class="flex items-center justify-center gap-1">
-                <button onclick="setCellVal(${r}, ${cIdx}, 'V')" id="btnCell_${r}_${cIdx}_V" class="w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all ${stValue === 'V' ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300'}">
+                <button onclick="setCellVal(${r}, ${cIdx}, 'V')" id="btnCell_${r}_${cIdx}_V"
+                  class="w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all ${stValue === 'V' ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300'}">
                   ${translateVal('V')}
                 </button>
-                <button onclick="setCellVal(${r}, ${cIdx}, 'F')" id="btnCell_${r}_${cIdx}_F" class="w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all ${stValue === 'F' ? 'bg-rose-500 text-white border-rose-600' : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300'}">
+                <button onclick="setCellVal(${r}, ${cIdx}, 'F')" id="btnCell_${r}_${cIdx}_F"
+                  class="w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all ${stValue === 'F' ? 'bg-rose-500 text-white border-rose-600' : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300'}">
                   ${translateVal('F')}
                 </button>
-              </div>
-            `;
+              </div>`;
           }
           tr.appendChild(td);
         });
@@ -801,175 +906,123 @@
       updateCellCounter();
     }
 
-    function translateVal(v) {
-      return representationMapping[appState.representationMode][v];
-    }
+    function translateVal(v) { return representationMapping[appState.representationMode][v]; }
 
-    // Evalúa una expresión lógica dados los valores de las variables en una fila (Caso corregido y robusto)
     function evaluateExpression(expr, rowVals) {
       expr = cleanParentheses(expr).toLowerCase();
       if (rowVals[expr] !== undefined) return rowVals[expr];
 
-      let mainOpIdx = findMainOperator(expr);
+      const mainOpIdx = findMainOperator(expr);
       if (mainOpIdx === -1) {
         if (expr.startsWith('~')) {
-          let inner = expr.slice(1);
-          let innerVal = evaluateExpression(inner, rowVals);
-          return innerVal === 'V' ? 'F' : 'V';
+          return evaluateExpression(expr.slice(1), rowVals) === 'V' ? 'F' : 'V';
         }
-        // Fallback de contingencia ante diferencias de claves de variables en mayúscula/minúscula
         return rowVals[expr] || rowVals[expr.toUpperCase()] || rowVals[expr.toLowerCase()] || 'F';
       }
 
-      let op = expr[mainOpIdx];
-      let left = expr.slice(0, mainOpIdx);
-      let right = expr.slice(mainOpIdx + 1);
-
-      let leftVal = evaluateExpression(left, rowVals);
-      let rightVal = evaluateExpression(right, rowVals);
+      const op       = expr[mainOpIdx];
+      const leftVal  = evaluateExpression(expr.slice(0, mainOpIdx), rowVals);
+      const rightVal = evaluateExpression(expr.slice(mainOpIdx + 1), rowVals);
 
       if (op === '&') return (leftVal === 'V' && rightVal === 'V') ? 'V' : 'F';
       if (op === '|') return (leftVal === 'F' && rightVal === 'F') ? 'F' : 'V';
       if (op === '>') return (leftVal === 'V' && rightVal === 'F') ? 'F' : 'V';
       if (op === '=') return (leftVal === rightVal) ? 'V' : 'F';
-
       return 'F';
     }
 
-    // --- ACCIÓN DE SELECCIONAR UN VALOR DE VERDAD ---
     function setCellVal(r, c, val) {
       const cellKey = `${r}_${c}`;
-      
-      if (appState.studentInput[cellKey] === val) {
-        delete appState.studentInput[cellKey];
-      } else {
-        appState.studentInput[cellKey] = val;
-      }
+      if (appState.studentInput[cellKey] === val) delete appState.studentInput[cellKey];
+      else appState.studentInput[cellKey] = val;
 
+      const current = appState.studentInput[cellKey];
       const btnV = document.getElementById(`btnCell_${r}_${c}_V`);
       const btnF = document.getElementById(`btnCell_${r}_${c}_F`);
-      const current = appState.studentInput[cellKey];
+      const base = 'w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all';
 
       if (current === 'V') {
-        btnV.className = "w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all bg-emerald-500 text-white border-emerald-600";
-        btnF.className = "w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300";
+        btnV.className = `${base} bg-emerald-500 text-white border-emerald-600`;
+        btnF.className = `${base} bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300`;
       } else if (current === 'F') {
-        btnF.className = "w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all bg-rose-500 text-white border-rose-600";
-        btnV.className = "w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300";
+        btnF.className = `${base} bg-rose-500 text-white border-rose-600`;
+        btnV.className = `${base} bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300`;
       } else {
-        btnV.className = "w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300";
-        btnF.className = "w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300";
+        btnV.className = `${base} bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300`;
+        btnF.className = `${base} bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300`;
       }
 
       updateCellCounter();
     }
 
-    // Inyecta el valor de forma directa (Sin toggles, previniendo borrados involuntarios)
     function setCellValDirect(r, c, val) {
-      const cellKey = `${r}_${c}`;
-      appState.studentInput[cellKey] = val;
-
+      appState.studentInput[`${r}_${c}`] = val;
+      const base = 'w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all';
       const btnV = document.getElementById(`btnCell_${r}_${c}_V`);
       const btnF = document.getElementById(`btnCell_${r}_${c}_F`);
-
       if (val === 'V') {
-        btnV.className = "w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all bg-emerald-500 text-white border-emerald-600";
-        btnF.className = "w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300";
-      } else if (val === 'F') {
-        btnF.className = "w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all bg-rose-500 text-white border-rose-600";
-        btnV.className = "w-8 h-8 rounded-lg border font-bold text-xs flex items-center justify-center transition-all bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300";
+        btnV.className = `${base} bg-emerald-500 text-white border-emerald-600`;
+        btnF.className = `${base} bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300`;
+      } else {
+        btnF.className = `${base} bg-rose-500 text-white border-rose-600`;
+        btnV.className = `${base} bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-300`;
       }
     }
 
     function updateCellCounter() {
-      const vars = appState.variables;
-      const cols = appState.activeColumns;
+      const vars  = appState.variables;
+      const cols  = appState.activeColumns;
       const numRows = Math.pow(2, vars.length);
-      
-      let totalInteractive = 0;
-      cols.forEach(col => {
-        if (!vars.includes(col)) totalInteractive++;
-      });
-      const totalCells = totalInteractive * numRows;
+      const totalInteractive = cols.filter(col => !vars.includes(col)).length;
       const completed = Object.keys(appState.studentInput).length;
-
-      document.getElementById('txtCellCounter').innerText = `Celdas completadas: ${completed} / ${totalCells}`;
+      document.getElementById('txtCellCounter').innerText = `Celdas completadas: ${completed} / ${totalInteractive * numRows}`;
     }
 
-    // --- REVELACIÓN DE PASO A PASO (AYUDA DUA DIRECTA) ---
     function revealStepByStep() {
-      const vars = appState.variables;
-      const cols = appState.activeColumns;
+      const vars  = appState.variables;
+      const cols  = appState.activeColumns;
       const numRows = Math.pow(2, vars.length);
 
-      let colToRevealIdx = -1;
       for (let c = 0; c < cols.length; c++) {
         if (!vars.includes(cols[c])) {
-          let completed = true;
-          for (let r = 0; r < numRows; r++) {
-            if (!appState.studentInput[`${r}_${c}`]) {
-              completed = false;
-              break;
-            }
-          }
-          if (!completed) {
-            colToRevealIdx = c;
-            break;
+          const allFilled = Array.from({ length: numRows }, (_, r) => appState.studentInput[`${r}_${c}`]).every(Boolean);
+          if (!allFilled) {
+            for (let r = 0; r < numRows; r++) setCellValDirect(r, c, appState.tableValues[r][cols[c]]);
+            updateCellCounter();
+            return;
           }
         }
-      }
-
-      if (colToRevealIdx !== -1) {
-        for (let r = 0; r < numRows; r++) {
-          const colName = cols[colToRevealIdx];
-          const correctVal = appState.tableValues[r][colName];
-          setCellValDirect(r, colToRevealIdx, correctVal);
-        }
-        updateCellCounter();
       }
     }
 
-    // --- VERIFICAR RESPUESTAS DE LA TABLA ---
     function checkTableAnswers() {
-      const vars = appState.variables;
-      const cols = appState.activeColumns;
+      const vars  = appState.variables;
+      const cols  = appState.activeColumns;
       const numRows = Math.pow(2, vars.length);
 
-      let allCorrect = true;
-      let hasEmpty = false;
+      let allCorrect = true, hasEmpty = false;
 
       for (let r = 0; r < numRows; r++) {
         cols.forEach((col, cIdx) => {
           if (!vars.includes(col)) {
             const studentVal = appState.studentInput[`${r}_${cIdx}`];
             const correctVal = appState.tableValues[r][col];
-            
             const btnV = document.getElementById(`btnCell_${r}_${cIdx}_V`);
             const btnF = document.getElementById(`btnCell_${r}_${cIdx}_F`);
-
             if (btnV && btnF) {
-              btnV.className = btnV.className.replace(/\s*ring-\d+\s*ring-\w+-\d+/g, "");
-              btnF.className = btnF.className.replace(/\s*ring-\d+\s*ring-\w+-\d+/g, "");
+              btnV.className = btnV.className.replace(/\s*ring-\d+\s*ring-\w+-\d+/g, '');
+              btnF.className = btnF.className.replace(/\s*ring-\d+\s*ring-\w+-\d+/g, '');
             }
-
             if (!studentVal) {
-              allCorrect = false;
-              hasEmpty = true;
-              if (btnV && btnF) {
-                btnV.className += " ring-4 ring-amber-300";
-                btnF.className += " ring-4 ring-amber-300";
-              }
+              allCorrect = false; hasEmpty = true;
+              if (btnV && btnF) { btnV.className += ' ring-4 ring-amber-300'; btnF.className += ' ring-4 ring-amber-300'; }
             } else if (studentVal !== correctVal) {
               allCorrect = false;
-              if (btnV && btnF) {
-                if (studentVal === 'V') btnV.className += " ring-4 ring-rose-300";
-                if (studentVal === 'F') btnF.className += " ring-4 ring-rose-300";
-              }
+              if (studentVal === 'V' && btnV) btnV.className += ' ring-4 ring-rose-300';
+              if (studentVal === 'F' && btnF) btnF.className += ' ring-4 ring-rose-300';
             } else {
-              if (btnV && btnF) {
-                if (studentVal === 'V') btnV.className += " ring-2 ring-emerald-300";
-                if (studentVal === 'F') btnF.className += " ring-2 ring-emerald-300";
-              }
+              if (studentVal === 'V' && btnV) btnV.className += ' ring-2 ring-emerald-300';
+              if (studentVal === 'F' && btnF) btnF.className += ' ring-2 ring-emerald-300';
             }
           }
         });
@@ -979,59 +1032,46 @@
       fbTable.classList.remove('hidden');
 
       if (allCorrect) {
-        fbTable.className = "mt-4 p-4 rounded-xl text-center font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 block";
-        fbTable.innerHTML = "🎉 ¡Perfecto! Todas las celdas de tu tabla de verdad son correctas. Ya puedes continuar con el semáforo de abajo.";
-        
+        fbTable.className = 'mt-4 p-4 rounded-xl text-center font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 block';
+        fbTable.innerHTML = '🎉 ¡Perfecto! Todas las celdas de tu tabla de verdad son correctas. Ya puedes continuar con el semáforo de abajo.';
         document.getElementById('sectionClassification').classList.remove('hidden');
         document.getElementById('sectionClassification').scrollIntoView({ behavior: 'smooth' });
       } else {
-        fbTable.className = "mt-4 p-4 rounded-xl text-center font-bold bg-rose-50 text-rose-800 border border-rose-200 block";
-        if (hasEmpty) {
-          fbTable.innerHTML = "⚠️ Tienes celdas vacías (resaltadas en amarillo). ¡Selecciona V o F para completarlas!";
-        } else {
-          fbTable.innerHTML = "⚠️ Tienes respuestas incorrectas en la tabla (resaltadas en rojo). ¡Revísalas usando las guías lógicas!";
-        }
+        fbTable.className = 'mt-4 p-4 rounded-xl text-center font-bold bg-rose-50 text-rose-800 border border-rose-200 block';
+        fbTable.innerHTML = hasEmpty
+          ? '⚠️ Tienes celdas vacías (resaltadas en amarillo). ¡Selecciona V o F para completarlas!'
+          : '⚠️ Tienes respuestas incorrectas en la tabla (resaltadas en rojo). ¡Revísalas usando las guías lógicas!';
       }
     }
 
-    // --- VERIFICACIÓN DE CLASIFICACIÓN FINAL (SEMÁFORO) ---
+
+    // ─── CLASIFICACIÓN ────────────────────────────────────────────────────────
+
     function verifyClassification(choice) {
-      const vars = appState.variables;
       const lastCol = appState.activeColumns[appState.activeColumns.length - 1];
-      const numRows = Math.pow(2, vars.length);
+      const numRows = Math.pow(2, appState.variables.length);
+      const results = Array.from({ length: numRows }, (_, r) => appState.tableValues[r][lastCol]);
 
-      let results = [];
-      for (let r = 0; r < numRows; r++) {
-        results.push(appState.tableValues[r][lastCol]);
-      }
-
-      const allV = results.every(val => val === 'V');
-      const allF = results.every(val => val === 'F');
-      
-      let correctAnswer = 'contingency';
-      if (allV) correctAnswer = 'tautology';
-      else if (allF) correctAnswer = 'contradiction';
+      const allV = results.every(v => v === 'V');
+      const allF = results.every(v => v === 'F');
+      const correctAnswer = allV ? 'tautology' : allF ? 'contradiction' : 'contingency';
 
       const fbClass = document.getElementById('feedbackClassification');
       fbClass.classList.remove('hidden');
 
       if (choice === correctAnswer) {
-        fbClass.className = "mt-4 p-4 rounded-xl text-center font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 block";
-        
-        let expl = '';
-        if (choice === 'tautology') expl = "¡Es una Tautología! Todos los resultados son siempre Verdaderos (🟢). El sistema es 100% confiable.";
-        if (choice === 'contradiction') expl = "¡Es una Contradicción! Todos los resultados son siempre Falsos (🔴). El sistema tiene un fallo de código.";
-        if (choice === 'contingency') expl = "¡Es una Contingencia! El resultado varía entre Verdadero y Falso (🟡) según los valores de entrada.";
-
+        fbClass.className = 'mt-4 p-4 rounded-xl text-center font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 block';
+        const expl = {
+          tautology:    '¡Es una Tautología! Todos los resultados son siempre Verdaderos (🟢). El sistema es 100% confiable.',
+          contradiction:'¡Es una Contradicción! Todos los resultados son siempre Falsos (🔴). El sistema tiene un fallo de código.',
+          contingency:  '¡Es una Contingencia! El resultado varía entre Verdadero y Falso (🟡) según los valores de entrada.'
+        }[choice];
         fbClass.innerHTML = `🎉 ¡Correcto! ${expl}`;
-
         document.getElementById('txtCongratsMessage').innerHTML = `Has completado el análisis de <strong class="mono">${translateFormula(appState.formulaNormalized)}</strong>.<br><br>${expl}`;
-        setTimeout(() => {
-          document.getElementById('congratsModal').classList.remove('hidden');
-        }, 800);
+        setTimeout(() => document.getElementById('congratsModal').classList.remove('hidden'), 800);
       } else {
-        fbClass.className = "mt-4 p-4 rounded-xl text-center font-bold bg-rose-50 text-rose-800 border border-rose-200 block";
-        fbClass.innerHTML = "❌ Esa no es la clasificación correcta. Mira la última columna de la tabla y vuelve a intentarlo.";
+        fbClass.className = 'mt-4 p-4 rounded-xl text-center font-bold bg-rose-50 text-rose-800 border border-rose-200 block';
+        fbClass.innerHTML = '❌ Esa no es la clasificación correcta. Mira la última columna de la tabla y vuelve a intentarlo.';
       }
     }
 
